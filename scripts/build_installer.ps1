@@ -576,6 +576,7 @@ sealed class InstallerForm : Form
         if (cleanFirst && Directory.Exists(targetDir))
         {
             ReportProgress(18, "Removing previous installation...");
+            StopProcessesFromDirectory(targetDir);
             DeleteDirectory(targetDir);
         }
         ReportProgress(28, "Creating install folder...");
@@ -612,7 +613,11 @@ sealed class InstallerForm : Form
         ReportProgress(40, "Removing Windows uninstall entry...");
         DeleteRegistryEntries();
         ReportProgress(62, "Removing application files...");
-        if (Directory.Exists(targetDir)) DeleteDirectory(targetDir);
+        if (Directory.Exists(targetDir))
+        {
+            StopProcessesFromDirectory(targetDir);
+            DeleteDirectory(targetDir);
+        }
         if (removeSettings && Directory.Exists(ConfigDir))
         {
             ReportProgress(84, "Removing settings and saved playsets...");
@@ -633,6 +638,31 @@ sealed class InstallerForm : Form
             catch
             {
                 // The installer continues; file operations below will report a useful error if needed.
+            }
+        }
+    }
+
+    void StopProcessesFromDirectory(string targetDir)
+    {
+        var currentId = Environment.ProcessId;
+        var target = Path.GetFullPath(targetDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (var process in Process.GetProcesses())
+        {
+            try
+            {
+                if (process.Id == currentId) continue;
+                var path = process.MainModule?.FileName;
+                if (string.IsNullOrWhiteSpace(path)) continue;
+                var fullPath = Path.GetFullPath(path);
+                if (!fullPath.StartsWith(target, StringComparison.OrdinalIgnoreCase)) continue;
+
+                process.CloseMainWindow();
+                if (!process.WaitForExit(3000)) process.Kill(true);
+                process.WaitForExit(5000);
+            }
+            catch
+            {
+                // Some system processes do not expose MainModule. Ignore them.
             }
         }
     }
@@ -763,11 +793,26 @@ sealed class InstallerForm : Form
 
     static void DeleteDirectory(string path)
     {
-        foreach (var item in Directory.EnumerateFileSystemEntries(path, "*", SearchOption.AllDirectories))
+        for (var attempt = 0; attempt < 12; attempt++)
         {
-            try { File.SetAttributes(item, FileAttributes.Normal); } catch { }
+            try
+            {
+                foreach (var item in Directory.EnumerateFileSystemEntries(path, "*", SearchOption.AllDirectories))
+                {
+                    try { File.SetAttributes(item, FileAttributes.Normal); } catch { }
+                }
+                Directory.Delete(path, recursive: true);
+                return;
+            }
+            catch (IOException) when (attempt < 11)
+            {
+                System.Threading.Thread.Sleep(500);
+            }
+            catch (UnauthorizedAccessException) when (attempt < 11)
+            {
+                System.Threading.Thread.Sleep(500);
+            }
         }
-        Directory.Delete(path, recursive: true);
     }
 
     static void DeleteFile(string path)
