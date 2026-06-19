@@ -77,6 +77,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Flags: nowait skipifnotsilent
 
 [UninstallDelete]
 Type: files; Name: "{app}\Vic3ModLauncher-Setup.exe"

@@ -7,6 +7,13 @@ Format versi mengikuti SemVer: `MAJOR.MINOR.PATCH+BUILD`.
 - `PATCH`: bug fix atau perbaikan kecil.
 - `BUILD`: nomor build installer/app untuk update detection.
 
+## 1.1.2+8 - 2026-06-19
+
+### Fixed
+
+- Reopen the launcher from the silent installer after an update completes.
+- Keep the normal installer finish page launch option for manual installs.
+
 ## 1.1.1+7 - 2026-06-19
 
 ### Fixed

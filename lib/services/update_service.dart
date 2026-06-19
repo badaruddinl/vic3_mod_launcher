@@ -128,45 +128,23 @@ class UpdateService {
   }
 
   Future<void> launchInstaller(File installer) async {
-    final appExe = Platform.resolvedExecutable;
-    final args = _silentInstallerArgs;
+    const args = [
+      '/SP-',
+      '/VERYSILENT',
+      '/SUPPRESSMSGBOXES',
+      '/NORESTART',
+      '/CLOSEAPPLICATIONS',
+    ];
     AppLogger.info(
-      'Launching update installer with relaunch: ${installer.path} ${args.join(' ')}. App: $appExe',
+      'Launching update installer: ${installer.path} ${args.join(' ')}',
     );
     await Process.start(
-      'powershell',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', _updateScript],
-      environment: {
-        'VIC3_UPDATE_INSTALLER': installer.path,
-        'VIC3_UPDATE_APP': appExe,
-        'VIC3_UPDATE_ARGS': args.join('\n'),
-      },
+      installer.path,
+      args,
       runInShell: Platform.isWindows,
       mode: ProcessStartMode.detached,
     );
   }
-
-  List<String> get _silentInstallerArgs => const [
-    '/SP-',
-    '/VERYSILENT',
-    '/SUPPRESSMSGBOXES',
-    '/NORESTART',
-    '/CLOSEAPPLICATIONS',
-  ];
-
-  String get _updateScript => r'''
-$ErrorActionPreference = 'Stop'
-$installer = $env:VIC3_UPDATE_INSTALLER
-$app = $env:VIC3_UPDATE_APP
-$args = @()
-if (-not [string]::IsNullOrWhiteSpace($env:VIC3_UPDATE_ARGS)) {
-  $args = $env:VIC3_UPDATE_ARGS -split "`n"
-}
-Start-Process -FilePath $installer -ArgumentList $args -Wait
-if (-not [string]::IsNullOrWhiteSpace($app) -and (Test-Path -LiteralPath $app)) {
-  Start-Process -FilePath $app -WorkingDirectory (Split-Path -Parent $app)
-}
-''';
 
   Future<String> _readText(String location) async {
     final value = location.trim();
