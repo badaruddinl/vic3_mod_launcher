@@ -6,7 +6,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
-import '../constants.dart';
 import '../models.dart';
 import '../services/app_logger.dart';
 import '../services/diagnostic_service.dart';
@@ -16,9 +15,8 @@ import '../services/launcher_config.dart';
 import '../services/path_service.dart';
 import '../services/playset_service.dart';
 import '../services/update_service.dart';
-import '../widgets/mod_manager.dart';
-import '../widgets/path_header.dart';
-import '../widgets/side_panel.dart';
+import 'home_dashboard.dart';
+import 'settings_screen.dart';
 
 class LauncherHome extends StatefulWidget {
   const LauncherHome({super.key});
@@ -43,6 +41,7 @@ class _LauncherHomeState extends State<LauncherHome> {
   bool loading = true;
   bool checkingUpdates = false;
   bool startupUpdateCheckDone = false;
+  bool settingsOpen = false;
   UpdateCheckResult? availableUpdate;
 
   @override
@@ -1003,155 +1002,138 @@ $process.Id
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        backgroundColor: Color(0xff071314),
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(appName),
-        actions: [
-          PopupMenuButton<String>(
-            tooltip: 'Updates',
-            icon: _UpdateIcon(
-              checking: checkingUpdates,
-              hasUpdate: availableUpdate != null,
-            ),
-            onSelected: (value) {
-              if (value == 'check') _checkForUpdates();
-              if (value == 'view' && availableUpdate != null) {
-                _showUpdateDialog(availableUpdate!);
-              }
-              if (value == 'source') _editUpdateSource();
-              if (value == 'logs') AppLogger.openDirectory();
-            },
-            itemBuilder: (context) => [
-              if (availableUpdate != null)
-                PopupMenuItem(
-                  value: 'view',
-                  child: ListTile(
-                    leading: const Icon(Icons.system_update),
-                    title: Text('Update ${availableUpdate!.latest.label}'),
-                  ),
-                ),
-              const PopupMenuItem(
-                value: 'check',
-                child: ListTile(
-                  leading: Icon(Icons.search),
-                  title: Text('Check for Updates'),
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'source',
-                child: ListTile(
-                  leading: Icon(Icons.link),
-                  title: Text('Update Source'),
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'logs',
-                child: ListTile(
-                  leading: Icon(Icons.folder_open),
-                  title: Text('Open Logs'),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('Debug mode'),
-              Switch(
-                value: config.debugMode,
-                onChanged: (value) async {
-                  setState(() => config = config.copyWith(debugMode: value));
-                  await config.save();
-                  _log('Debug mode ${value ? 'enabled' : 'disabled'}');
-                },
-              ),
-              const SizedBox(width: 12),
-            ],
-          ),
-        ],
+    final updateMenu = _buildUpdateMenu();
+    if (settingsOpen) {
+      return LauncherSettingsScreen(
+        config: config,
+        gameVersion: gameVersion,
+        mods: mods,
+        availableModIds: availableModIds,
+        activeModIds: activeModIds,
+        selectedAvailable: selectedAvailable,
+        selectedActive: selectedActive,
+        validations: modValidations,
+        dlcs: dlcs,
+        disabledDlcs: disabledDlcs,
+        playsets: savedPlaysets,
+        updateMenu: updateMenu,
+        onBack: () => setState(() => settingsOpen = false),
+        onPickUserData: _pickUserData,
+        onPickGameRoot: _pickGameRoot,
+        onAutoDetect: _autoDetectPaths,
+        onRefresh: _refresh,
+        onDiagnose: _diagnose,
+        onImportZip: _importZip,
+        onRepair: () => _repairDescriptors(showDialogAfter: true),
+        onRestoreBackup: _restoreBackup,
+        onSavePlayset: _savePlayset,
+        onSavePlaysetAs: _savePlaysetAs,
+        onLoadPlayset: _loadSavedPlayset,
+        onDeletePlayset: _deleteSavedPlayset,
+        onAutoRepairChanged: (value) async {
+          setState(() => config = config.copyWith(autoRepair: value));
+          await _refresh();
+        },
+        onDebugModeChanged: (value) async {
+          setState(() => config = config.copyWith(debugMode: value));
+          await config.save();
+          _log('Debug mode ${value ? 'enabled' : 'disabled'}');
+        },
+        onAddExtraRoot: _addExtraRoot,
+        onRemoveExtraRoot: _removeExtraRoot,
+        onAvailableTap: (id) => setState(
+          () => selectedAvailable.contains(id)
+              ? selectedAvailable.remove(id)
+              : selectedAvailable.add(id),
+        ),
+        onActiveTap: (id) => setState(
+          () => selectedActive.contains(id)
+              ? selectedActive.remove(id)
+              : selectedActive.add(id),
+        ),
+        onActiveReorder: _reorderActive,
+        onEnable: _enableSelected,
+        onDisable: _disableSelected,
+        onUp: () => _moveSelected(-1),
+        onDown: () => _moveSelected(1),
+        onTop: () => _moveSelectedToEdge(bottom: false),
+        onBottom: () => _moveSelectedToEdge(bottom: true),
+        onToggleDlc: (dlc) {
+          setState(() {
+            final key = dlc.ref.toLowerCase();
+            disabledDlcs.contains(key)
+                ? disabledDlcs.remove(key)
+                : disabledDlcs.add(key);
+          });
+        },
+        onEnableAllDlc: () => setState(disabledDlcs.clear),
+      );
+    }
+
+    return HomeDashboard(
+      gameVersion: gameVersion,
+      mods: mods,
+      activeModIds: activeModIds,
+      validations: modValidations,
+      logs: logs,
+      updateMenu: updateMenu,
+      onLaunch: _launchGame,
+      onOpenSettings: () => setState(() => settingsOpen = true),
+    );
+  }
+
+  Widget _buildUpdateMenu() {
+    return PopupMenuButton<String>(
+      tooltip: 'Updates',
+      icon: _UpdateIcon(
+        checking: checkingUpdates,
+        hasUpdate: availableUpdate != null,
       ),
-      body: Column(
-        children: [
-          PathHeader(
-            config: config,
-            gameVersion: gameVersion,
-            onPickUserData: _pickUserData,
-            onPickGameRoot: _pickGameRoot,
-            onAutoDetect: _autoDetectPaths,
-            onRefresh: _refresh,
-            onDiagnose: _diagnose,
-            onImportZip: _importZip,
-            onRepair: () => _repairDescriptors(showDialogAfter: true),
-            onRestoreBackup: _restoreBackup,
-            onSave: _savePlayset,
-            onLaunch: _launchGame,
-            onAutoRepairChanged: (value) async {
-              setState(() => config = config.copyWith(autoRepair: value));
-              await _refresh();
-            },
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: ModManager(
-                    mods: mods,
-                    availableIds: availableModIds,
-                    activeIds: activeModIds,
-                    selectedAvailable: selectedAvailable,
-                    selectedActive: selectedActive,
-                    validations: modValidations,
-                    onAvailableTap: (id) => setState(
-                      () => selectedAvailable.contains(id)
-                          ? selectedAvailable.remove(id)
-                          : selectedAvailable.add(id),
-                    ),
-                    onActiveTap: (id) => setState(
-                      () => selectedActive.contains(id)
-                          ? selectedActive.remove(id)
-                          : selectedActive.add(id),
-                    ),
-                    onEnable: _enableSelected,
-                    onDisable: _disableSelected,
-                    onActiveReorder: _reorderActive,
-                    onUp: () => _moveSelected(-1),
-                    onDown: () => _moveSelected(1),
-                    onTop: () => _moveSelectedToEdge(bottom: false),
-                    onBottom: () => _moveSelectedToEdge(bottom: true),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: SidePanel(
-                    config: config,
-                    dlcs: dlcs,
-                    disabledDlcs: disabledDlcs,
-                    logs: logs,
-                    playsets: savedPlaysets,
-                    onToggleDlc: (dlc) {
-                      setState(() {
-                        final key = dlc.ref.toLowerCase();
-                        disabledDlcs.contains(key)
-                            ? disabledDlcs.remove(key)
-                            : disabledDlcs.add(key);
-                      });
-                    },
-                    onEnableAllDlc: () => setState(disabledDlcs.clear),
-                    onAddExtraRoot: _addExtraRoot,
-                    onRemoveExtraRoot: _removeExtraRoot,
-                    onSavePlaysetAs: _savePlaysetAs,
-                    onLoadPlayset: _loadSavedPlayset,
-                    onDeletePlayset: _deleteSavedPlayset,
-                  ),
-                ),
-              ],
+      onSelected: (value) {
+        if (value == 'check') _checkForUpdates();
+        if (value == 'view' && availableUpdate != null) {
+          _showUpdateDialog(availableUpdate!);
+        }
+        if (value == 'source') _editUpdateSource();
+        if (value == 'logs') AppLogger.openDirectory();
+      },
+      itemBuilder: (context) => [
+        if (availableUpdate != null)
+          PopupMenuItem(
+            value: 'view',
+            child: ListTile(
+              leading: const Icon(Icons.system_update),
+              title: Text('Update ${availableUpdate!.latest.label}'),
             ),
           ),
-        ],
-      ),
+        const PopupMenuItem(
+          value: 'check',
+          child: ListTile(
+            leading: Icon(Icons.search),
+            title: Text('Check for Updates'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'source',
+          child: ListTile(
+            leading: Icon(Icons.link),
+            title: Text('Update Source'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'logs',
+          child: ListTile(
+            leading: Icon(Icons.folder_open),
+            title: Text('Open Logs'),
+          ),
+        ),
+      ],
     );
   }
 }
