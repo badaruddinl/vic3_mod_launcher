@@ -42,6 +42,8 @@ class _LauncherHomeState extends State<LauncherHome> {
   String gameVersion = '';
   bool loading = true;
   bool checkingUpdates = false;
+  bool startupUpdateCheckDone = false;
+  UpdateCheckResult? availableUpdate;
 
   @override
   void initState() {
@@ -78,6 +80,7 @@ class _LauncherHomeState extends State<LauncherHome> {
       'Loaded ${mods.length} mods, ${dlcs.length} DLC, game version: ${gameVersion.isEmpty ? 'unknown' : gameVersion}',
     );
     setState(() => loading = false);
+    _checkForUpdatesOnStartup();
   }
 
   Future<Map<String, ModInfo>> _scanMods() async {
@@ -780,6 +783,11 @@ $process.Id
       _log(
         'Update check: current ${result.current.label}, latest ${result.latest.label}',
       );
+      if (mounted) {
+        setState(
+          () => availableUpdate = result.updateAvailable ? result : null,
+        );
+      }
       if (!mounted) return;
       if (!result.updateAvailable) {
         _showMessage(
@@ -796,6 +804,34 @@ $process.Id
       }
     } finally {
       if (mounted) setState(() => checkingUpdates = false);
+    }
+  }
+
+  Future<void> _checkForUpdatesOnStartup() async {
+    if (startupUpdateCheckDone || checkingUpdates) return;
+    startupUpdateCheckDone = true;
+    try {
+      final result = await const UpdateService().check(
+        config.updateManifestUrl,
+      );
+      _log(
+        'Startup update check: current ${result.current.label}, latest ${result.latest.label}',
+      );
+      if (!mounted) return;
+      if (result.updateAvailable) {
+        setState(() => availableUpdate = result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Update ${result.latest.label} tersedia'),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => _showUpdateDialog(result),
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      _log('Startup update check failed: $error');
     }
   }
 
@@ -978,34 +1014,42 @@ $process.Id
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Updates',
-            icon: checkingUpdates
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.system_update_alt),
+            icon: _UpdateIcon(
+              checking: checkingUpdates,
+              hasUpdate: availableUpdate != null,
+            ),
             onSelected: (value) {
               if (value == 'check') _checkForUpdates();
+              if (value == 'view' && availableUpdate != null) {
+                _showUpdateDialog(availableUpdate!);
+              }
               if (value == 'source') _editUpdateSource();
               if (value == 'logs') AppLogger.openDirectory();
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
+            itemBuilder: (context) => [
+              if (availableUpdate != null)
+                PopupMenuItem(
+                  value: 'view',
+                  child: ListTile(
+                    leading: const Icon(Icons.system_update),
+                    title: Text('Update ${availableUpdate!.latest.label}'),
+                  ),
+                ),
+              const PopupMenuItem(
                 value: 'check',
                 child: ListTile(
                   leading: Icon(Icons.search),
                   title: Text('Check for Updates'),
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'source',
                 child: ListTile(
                   leading: Icon(Icons.link),
                   title: Text('Update Source'),
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'logs',
                 child: ListTile(
                   leading: Icon(Icons.folder_open),
@@ -1110,6 +1154,48 @@ $process.Id
           ),
         ],
       ),
+    );
+  }
+}
+
+class _UpdateIcon extends StatelessWidget {
+  const _UpdateIcon({required this.checking, required this.hasUpdate});
+
+  final bool checking;
+  final bool hasUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    if (checking) {
+      return const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(Icons.system_update_alt),
+        if (hasUpdate)
+          Positioned(
+            right: -1,
+            top: -1,
+            child: Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

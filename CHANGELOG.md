@@ -7,6 +7,14 @@ Format versi mengikuti SemVer: `MAJOR.MINOR.PATCH+BUILD`.
 - `PATCH`: bug fix atau perbaikan kecil.
 - `BUILD`: nomor build installer/app untuk update detection.
 
+## 1.1.0+6 - 2026-06-19
+
+### Added
+
+- Added automatic update check after launcher startup.
+- Added red update indicator on the update menu icon when a new version is available.
+- Added startup snackbar notification with a quick `View` action for available updates.
+
 ## 1.0.4+5 - 2026-06-19
 
 ### Fixed
