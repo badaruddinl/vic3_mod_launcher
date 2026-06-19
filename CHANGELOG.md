@@ -7,6 +7,13 @@ Format versi mengikuti SemVer: `MAJOR.MINOR.PATCH+BUILD`.
 - `PATCH`: bug fix atau perbaikan kecil.
 - `BUILD`: nomor build installer/app untuk update detection.
 
+## 1.0.4+5 - 2026-06-19
+
+### Fixed
+
+- Added cache-busting to update manifest and installer HTTP downloads.
+- Generated update manifests now point to version-specific installer assets instead of the moving `latest` URL.
+
 ## 1.0.3+4 - 2026-06-19
 
 ### Added

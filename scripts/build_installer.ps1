@@ -8,7 +8,7 @@ $iconFile = Join-Path $root "windows\runner\resources\app_icon.ico"
 $installerPath = Join-Path $distDir "Vic3ModLauncher-Setup.exe"
 $manifestPath = Join-Path $distDir "latest.json"
 $localTestManifestPath = Join-Path $distDir "latest.local-test.json"
-$releaseBaseUrl = "https://github.com/badaruddinl/vic3_mod_launcher/releases/latest/download"
+$releaseBaseUrl = "https://github.com/badaruddinl/vic3_mod_launcher/releases/download"
 
 function Find-InnoCompiler {
   $command = Get-Command ISCC.exe -ErrorAction SilentlyContinue
@@ -160,7 +160,7 @@ $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installerPath).Hash.ToLowe
 $manifest = [ordered]@{
   version = $version.Display
   buildNumber = [int]($version.File.Split(".")[-1])
-  installerUrl = "$releaseBaseUrl/Vic3ModLauncher-Setup.exe"
+  installerUrl = "$releaseBaseUrl/v$($version.Display)/Vic3ModLauncher-Setup.exe"
   sha256 = $hash
   publishedAt = (Get-Date).ToUniversalTime().ToString("o")
   notes = $releaseNotes

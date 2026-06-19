@@ -85,7 +85,7 @@ class UpdateService {
     } else if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
       final client = HttpClient();
       try {
-        final request = await client.getUrl(uri);
+        final request = await client.getUrl(_withCacheBust(uri));
         final response = await request.close();
         if (response.statusCode < 200 || response.statusCode >= 300) {
           throw _httpUpdateException(
@@ -165,7 +165,7 @@ class UpdateService {
 
     final client = HttpClient();
     try {
-      final request = await client.getUrl(uri);
+      final request = await client.getUrl(_withCacheBust(uri));
       final response = await request.close();
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw _httpUpdateException(
@@ -217,6 +217,12 @@ class UpdateService {
   String _localFilePath(String value, Uri? uri) {
     if (uri != null && uri.scheme == 'file') return uri.toFilePath();
     return value;
+  }
+
+  Uri _withCacheBust(Uri uri) {
+    final updated = Map<String, String>.from(uri.queryParameters);
+    updated['_'] = DateTime.now().millisecondsSinceEpoch.toString();
+    return uri.replace(queryParameters: updated);
   }
 
   HttpException _httpUpdateException(String action, int statusCode, Uri uri) {
