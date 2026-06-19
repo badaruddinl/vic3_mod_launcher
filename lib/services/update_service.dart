@@ -116,25 +116,10 @@ class UpdateService {
   }
 
   Future<void> launchInstaller(File installer) async {
-    if (!Platform.isWindows) {
-      await Process.start(
-        installer.path,
-        const [],
-        mode: ProcessStartMode.detached,
-      );
-      return;
-    }
-
     await Process.start(
-      'powershell',
-      [
-        '-NoProfile',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        'Start-Process -FilePath \$env:VIC3_INSTALLER',
-      ],
-      environment: {'VIC3_INSTALLER': installer.path},
+      installer.path,
+      const [],
+      runInShell: Platform.isWindows,
       mode: ProcessStartMode.detached,
     );
   }

@@ -882,13 +882,7 @@ $process.Id
       if (mounted) Navigator.of(context).pop();
       await const UpdateService().launchInstaller(installer);
       _log('Update installer launched: ${installer.path}');
-      if (mounted) {
-        _showMessage(
-          'Installer update dijalankan',
-          'Launcher akan ditutup agar installer bisa mengganti file aplikasi.',
-        );
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       exit(0);
     } catch (error) {
       if (mounted) Navigator.of(context).pop();
