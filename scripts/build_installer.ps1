@@ -140,6 +140,8 @@ sealed class InstallerForm : Form
     readonly TextBox installDirBox = new();
     readonly CheckBox desktopShortcutBox = new();
     readonly CheckBox removeSettingsBox = new();
+    readonly ProgressBar progressBar = new();
+    readonly Label progressLabel = new();
 
     int step;
     string action = "install";
@@ -453,10 +455,12 @@ sealed class InstallerForm : Form
             switch (action)
             {
                 case "install":
+                    ShowProgress("Installing");
                     Install(targetDir, cleanFirst: false, options.CreateDesktopShortcut);
                     Complete("Installed successfully.", targetDir);
                     break;
                 case "reinstall":
+                    ShowProgress("Reinstalling");
                     Install(targetDir, cleanFirst: true, options.CreateDesktopShortcut);
                     Complete("Reinstalled successfully.", targetDir);
                     break;
@@ -469,6 +473,7 @@ sealed class InstallerForm : Form
                     {
                         return;
                     }
+                    ShowProgress("Uninstalling");
                     Uninstall(targetDir, options.RemoveSettings);
                     Complete("Uninstalled successfully.", targetDir);
                     break;
@@ -482,6 +487,41 @@ sealed class InstallerForm : Form
         {
             SetBusy(false);
         }
+    }
+
+    void ShowProgress(string title)
+    {
+        page.Controls.Clear();
+        headerLabel.Text = title;
+        bodyLabel.Text = "Please wait while setup applies the selected changes.";
+        backButton.Enabled = false;
+        nextButton.Enabled = false;
+        cancelButton.Enabled = false;
+
+        progressLabel.Left = 4;
+        progressLabel.Top = 26;
+        progressLabel.Width = 580;
+        progressLabel.Height = 28;
+        progressLabel.Text = "Preparing...";
+
+        progressBar.Left = 4;
+        progressBar.Top = 66;
+        progressBar.Width = 580;
+        progressBar.Height = 24;
+        progressBar.Minimum = 0;
+        progressBar.Maximum = 100;
+        progressBar.Value = 0;
+        progressBar.Style = ProgressBarStyle.Continuous;
+
+        page.Controls.AddRange(new Control[] { progressLabel, progressBar });
+        Application.DoEvents();
+    }
+
+    void ReportProgress(int value, string message)
+    {
+        progressBar.Value = Math.Max(progressBar.Minimum, Math.Min(progressBar.Maximum, value));
+        progressLabel.Text = message;
+        Application.DoEvents();
     }
 
     void Complete(string message, string targetDir)
@@ -537,10 +577,17 @@ sealed class InstallerForm : Form
 
     void Install(string targetDir, bool cleanFirst, bool createDesktopShortcut)
     {
+        ReportProgress(8, "Closing running launcher...");
         StopRunningLauncher();
-        if (cleanFirst && Directory.Exists(targetDir)) DeleteDirectory(targetDir);
+        if (cleanFirst && Directory.Exists(targetDir))
+        {
+            ReportProgress(18, "Removing previous installation...");
+            DeleteDirectory(targetDir);
+        }
+        ReportProgress(28, "Creating install folder...");
         Directory.CreateDirectory(targetDir);
 
+        ReportProgress(38, "Preparing package...");
         var tempZip = Path.Combine(Path.GetTempPath(), "Vic3ModLauncher-portable.zip");
         using (var source = Assembly.GetExecutingAssembly().GetManifestResourceStream("payload.zip"))
         {
@@ -549,21 +596,35 @@ sealed class InstallerForm : Form
             source.CopyTo(target);
         }
 
+        ReportProgress(55, "Extracting application files...");
         ZipFile.ExtractToDirectory(tempZip, targetDir, true);
+        ReportProgress(72, "Installing maintenance tools...");
         CopyMaintenanceTools(targetDir);
+        ReportProgress(84, "Creating shortcuts...");
         if (createDesktopShortcut) CreateShortcut(DesktopShortcutPath, AppExePath(targetDir), targetDir, AppExePath(targetDir));
         CreateStartMenuShortcuts(targetDir);
+        ReportProgress(94, "Registering Windows uninstall entry...");
         RegisterUninstallEntry(targetDir);
+        ReportProgress(100, "Done.");
     }
 
     void Uninstall(string targetDir, bool removeSettings)
     {
+        ReportProgress(10, "Closing running launcher...");
         StopRunningLauncher();
+        ReportProgress(25, "Removing shortcuts...");
         DeleteFile(DesktopShortcutPath);
         DeleteStartMenuShortcuts();
+        ReportProgress(40, "Removing Windows uninstall entry...");
         DeleteRegistryEntries();
+        ReportProgress(62, "Removing application files...");
         if (Directory.Exists(targetDir)) DeleteDirectory(targetDir);
-        if (removeSettings && Directory.Exists(ConfigDir)) DeleteDirectory(ConfigDir);
+        if (removeSettings && Directory.Exists(ConfigDir))
+        {
+            ReportProgress(84, "Removing settings and saved playsets...");
+            DeleteDirectory(ConfigDir);
+        }
+        ReportProgress(100, "Done.");
     }
 
     void StopRunningLauncher()
