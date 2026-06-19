@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../constants.dart';
 import '../models.dart';
 import '../widgets/victoria_ui.dart';
 
@@ -44,40 +43,40 @@ class HomeDashboard extends StatelessWidget {
 
     return VictoriaShell(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+        padding: const EdgeInsets.fromLTRB(26, 12, 26, 24),
         child: Column(
           children: [
-            _DashboardHeader(
-              gameVersion: gameVersion,
-              onOpenSettings: onOpenSettings,
-              updateMenu: updateMenu,
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            VictoriaTitleBar(
+              leading: VictoriaIconButton(
+                icon: Icons.settings_outlined,
+                tooltip: 'Settings',
+                onPressed: onOpenSettings,
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    width: 320,
-                    child: ActiveModsPreview(
-                      activeMods: activeMods,
-                      validations: validations,
-                    ),
-                  ),
-                  const SizedBox(width: 28),
-                  Expanded(
-                    child: _LaunchCenter(
-                      readyText: readyText,
-                      readyDetail: readyDetail,
-                      hasErrors: hasErrors,
-                      onLaunch: onLaunch,
-                    ),
-                  ),
+                  updateMenu,
+                  const SizedBox(width: 18),
+                  const VictoriaWindowButtons(),
                 ],
               ),
             ),
+            VictoriaHeaderMark(gameVersion: gameVersion),
             const SizedBox(height: 18),
-            SizedBox(height: 205, child: LiveLogPanel(logs: logs)),
+            Expanded(
+              child: _HeroStage(
+                activeMods: activeMods,
+                validations: validations,
+                readyText: readyText,
+                readyDetail: readyDetail,
+                hasErrors: hasErrors,
+                onLaunch: onLaunch,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const ReadinessTimeline(),
+            const SizedBox(height: 18),
+            SizedBox(height: 218, child: LiveLogPanel(logs: logs)),
           ],
         ),
       ),
@@ -85,78 +84,74 @@ class HomeDashboard extends StatelessWidget {
   }
 }
 
-class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader({
-    required this.gameVersion,
-    required this.onOpenSettings,
-    required this.updateMenu,
+class _HeroStage extends StatelessWidget {
+  const _HeroStage({
+    required this.activeMods,
+    required this.validations,
+    required this.readyText,
+    required this.readyDetail,
+    required this.hasErrors,
+    required this.onLaunch,
   });
 
-  final String gameVersion;
-  final VoidCallback onOpenSettings;
-  final Widget updateMenu;
+  final List<ModInfo> activeMods;
+  final Map<String, ModValidation> validations;
+  final String readyText;
+  final String readyDetail;
+  final bool hasErrors;
+  final VoidCallback onLaunch;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 740) {
+          return Column(
             children: [
-              SizedBox(
-                height: 92,
-                width: 92,
-                child: Image.asset('assets/brand/app_icon_256.png'),
+              Expanded(
+                child: ActiveModsPreview(
+                  activeMods: activeMods,
+                  validations: validations,
+                ),
               ),
-              const SizedBox(height: 6),
-              Text(appName, style: vicTitle(context, size: 42)),
-              const SizedBox(height: 12),
-              _VersionPill(
-                label: gameVersion.isEmpty ? 'unknown' : 'v$gameVersion',
+              const SizedBox(height: 14),
+              _LaunchCenter(
+                readyText: readyText,
+                readyDetail: readyDetail,
+                hasErrors: hasErrors,
+                onLaunch: onLaunch,
               ),
             ],
-          ),
-        ),
-        Align(
-          alignment: Alignment.topLeft,
-          child: IconButton(
-            tooltip: 'Settings',
-            onPressed: onOpenSettings,
-            icon: const Icon(Icons.settings_outlined),
-            color: VicColors.gold,
-          ),
-        ),
-        Align(alignment: Alignment.topRight, child: updateMenu),
-      ],
-    );
-  }
-}
+          );
+        }
 
-class _VersionPill extends StatelessWidget {
-  const _VersionPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xff063f3b),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: VicColors.gold),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: VicColors.gold,
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-          ),
-        ),
-      ),
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              left: 0,
+              top: 26,
+              bottom: 28,
+              child: SizedBox(
+                width: 286,
+                child: ActiveModsPreview(
+                  activeMods: activeMods,
+                  validations: validations,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 180),
+              child: _LaunchCenter(
+                readyText: readyText,
+                readyDetail: readyDetail,
+                hasErrors: hasErrors,
+                onLaunch: onLaunch,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -180,10 +175,20 @@ class ActiveModsPreview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final mod in preview) ...[
-            _ActiveModTile(mod: mod, validation: validations[mod.id]),
-            const SizedBox(height: 14),
-          ],
+          if (preview.isEmpty)
+            const Expanded(
+              child: Center(
+                child: Text(
+                  'No active mods',
+                  style: TextStyle(color: VicColors.muted),
+                ),
+              ),
+            )
+          else
+            for (final mod in preview) ...[
+              _ActiveModTile(mod: mod, validation: validations[mod.id]),
+              const SizedBox(height: 14),
+            ],
           if (extra > 0) ...[
             const Divider(color: Color(0x5578522e)),
             Center(
@@ -285,11 +290,11 @@ class _LaunchCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Spacer(),
         SizedBox(
-          width: 285,
-          height: 285,
+          width: 222,
+          height: 222,
           child: DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -303,12 +308,12 @@ class _LaunchCenter extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(22),
               child: Image.asset('assets/brand/app_icon_256.png'),
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -318,22 +323,26 @@ class _LaunchCenter extends StatelessWidget {
               size: 16,
             ),
             const SizedBox(width: 14),
-            Text(readyText, style: vicTitle(context, size: 29)),
+            Flexible(
+              child: Text(readyText, style: vicTitle(context, size: 27)),
+            ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           readyDetail,
-          style: const TextStyle(color: VicColors.parchment, fontSize: 16),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: VicColors.parchment,
+            fontSize: 14,
+            decoration: TextDecoration.none,
+          ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 18),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: GildedButton(label: 'START', large: true, onPressed: onLaunch),
         ),
-        const SizedBox(height: 28),
-        const ReadinessTimeline(),
-        const Spacer(),
       ],
     );
   }
@@ -355,7 +364,7 @@ class ReadinessTimeline extends StatelessWidget {
             last: i == steps.length - 1,
           ),
           if (i != steps.length - 1)
-            Container(width: 70, height: 1, color: const Color(0x8878522e)),
+            Container(width: 62, height: 1, color: const Color(0x8878522e)),
         ],
       ],
     );

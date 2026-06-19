@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../constants.dart';
 import '../models.dart';
 import '../services/launcher_config.dart';
 import '../widgets/mod_manager.dart';
@@ -116,15 +115,26 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
   Widget build(BuildContext context) {
     return VictoriaShell(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 22, 28, 20),
+        padding: const EdgeInsets.fromLTRB(28, 12, 28, 20),
         child: Column(
           children: [
-            _SettingsHeader(
-              gameVersion: widget.gameVersion,
-              onBack: widget.onBack,
-              updateMenu: widget.updateMenu,
+            VictoriaTitleBar(
+              leading: VictoriaIconButton(
+                icon: Icons.arrow_back,
+                tooltip: 'Back',
+                onPressed: widget.onBack,
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  widget.updateMenu,
+                  const SizedBox(width: 18),
+                  const VictoriaWindowButtons(),
+                ],
+              ),
             ),
-            const SizedBox(height: 18),
+            VictoriaHeaderMark(gameVersion: widget.gameVersion, compact: true),
+            const SizedBox(height: 16),
             _Tabs(controller: controller),
             Expanded(
               child: DecoratedBox(
@@ -193,7 +203,7 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
             Row(
               children: [
                 SizedBox(
-                  width: 220,
+                  width: 180,
                   child: GildedButton(
                     label: 'Back',
                     icon: Icons.chevron_left,
@@ -203,7 +213,7 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
                 ),
                 const SizedBox(width: 18),
                 SizedBox(
-                  width: 270,
+                  width: 220,
                   child: GildedButton(
                     label: 'Save Playset',
                     icon: Icons.save_outlined,
@@ -213,7 +223,7 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
                 ),
                 const Spacer(),
                 SizedBox(
-                  width: 330,
+                  width: 250,
                   child: GildedButton(
                     label: 'Save Settings',
                     icon: Icons.verified_outlined,
@@ -225,56 +235,6 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SettingsHeader extends StatelessWidget {
-  const _SettingsHeader({
-    required this.gameVersion,
-    required this.onBack,
-    required this.updateMenu,
-  });
-
-  final String gameVersion;
-  final VoidCallback onBack;
-  final Widget updateMenu;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: Column(
-            children: [
-              SizedBox(
-                width: 86,
-                height: 86,
-                child: Image.asset('assets/brand/app_icon_256.png'),
-              ),
-              const SizedBox(height: 4),
-              Text(appName, style: vicTitle(context, size: 37)),
-              const SizedBox(height: 10),
-              Text(
-                gameVersion.isEmpty
-                    ? 'Version unknown'
-                    : 'Victoria 3 v$gameVersion',
-                style: const TextStyle(color: VicColors.gold, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-        Align(
-          alignment: Alignment.topLeft,
-          child: IconButton(
-            tooltip: 'Back',
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back),
-            color: VicColors.gold,
-          ),
-        ),
-        Align(alignment: Alignment.topRight, child: updateMenu),
-      ],
     );
   }
 }
@@ -865,11 +825,40 @@ class _SwitchLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: const TextStyle(color: VicColors.parchment)),
-      subtitle: Text(subtitle, style: const TextStyle(color: VicColors.muted)),
-      trailing: Switch(value: value, onChanged: onChanged),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: VicColors.parchment,
+                    fontSize: 15,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: VicColors.muted,
+                    fontSize: 12,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Transform.scale(
+            scale: 0.86,
+            child: Switch(value: value, onChanged: onChanged),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -889,12 +878,42 @@ class _ActionLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: VicColors.gold),
-      title: Text(title, style: const TextStyle(color: VicColors.parchment)),
-      subtitle: Text(subtitle, style: const TextStyle(color: VicColors.muted)),
+    return InkWell(
       onTap: onPressed,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: Row(
+          children: [
+            Icon(icon, color: VicColors.gold),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: VicColors.parchment,
+                      fontSize: 15,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: VicColors.muted,
+                      fontSize: 12,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -907,11 +926,37 @@ class _ComingSoonLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: const TextStyle(color: VicColors.parchment)),
-      subtitle: Text(subtitle, style: const TextStyle(color: VicColors.muted)),
-      trailing: const Icon(Icons.lock_outline, color: VicColors.muted),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: VicColors.parchment,
+                    fontSize: 15,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: VicColors.muted,
+                    fontSize: 12,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.lock_outline, color: VicColors.muted),
+        ],
+      ),
     );
   }
 }

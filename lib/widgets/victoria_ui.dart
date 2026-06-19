@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 
 class VicColors {
   static const ink = Color(0xff071314);
@@ -20,6 +21,7 @@ TextStyle vicTitle(BuildContext context, {double size = 32}) {
     fontFamily: 'Georgia',
     fontSize: size,
     color: VicColors.parchment,
+    decoration: TextDecoration.none,
     height: 1.05,
     letterSpacing: 0,
     shadows: const [
@@ -32,6 +34,7 @@ TextStyle vicLabel(BuildContext context, {double size = 13}) {
   return TextStyle(
     fontSize: size,
     color: VicColors.gold,
+    decoration: TextDecoration.none,
     letterSpacing: 1.2,
     fontWeight: FontWeight.w600,
   );
@@ -52,16 +55,192 @@ class VictoriaShell extends StatelessWidget {
           colors: [Color(0xff1e211d), Color(0xff071314), Color(0xff031112)],
         ),
       ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const CustomPaint(painter: VictoriaBackdropPainter()),
+            DefaultTextStyle(
+              style: const TextStyle(
+                color: VicColors.parchment,
+                fontSize: 14,
+                decoration: TextDecoration.none,
+              ),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 980),
+                    child: VictoriaFrame(child: child),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class VictoriaTitleBar extends StatelessWidget {
+  const VictoriaTitleBar({
+    super.key,
+    required this.leading,
+    required this.trailing,
+  });
+
+  final Widget leading;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 58,
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          const CustomPaint(painter: VictoriaBackdropPainter()),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: VictoriaFrame(child: child),
-          ),
+          const Positioned.fill(child: DragToMoveArea(child: SizedBox())),
+          Align(alignment: Alignment.centerLeft, child: leading),
+          Align(alignment: Alignment.centerRight, child: trailing),
         ],
       ),
+    );
+  }
+}
+
+class VictoriaWindowButtons extends StatelessWidget {
+  const VictoriaWindowButtons({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _WindowButton(
+          tooltip: 'Minimize',
+          icon: Icons.remove,
+          onPressed: () => windowManager.minimize(),
+        ),
+        const SizedBox(width: 12),
+        _WindowButton(
+          tooltip: 'Close',
+          icon: Icons.close,
+          onPressed: () => windowManager.close(),
+        ),
+      ],
+    );
+  }
+}
+
+class _WindowButton extends StatelessWidget {
+  const _WindowButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkResponse(
+          onTap: onPressed,
+          radius: 22,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: VicColors.gold, size: 25),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VictoriaIconButton extends StatelessWidget {
+  const VictoriaIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0x44102121),
+        border: Border.all(color: VicColors.goldDark),
+      ),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: Icon(icon),
+        color: VicColors.gold,
+      ),
+    );
+  }
+}
+
+class VictoriaHeaderMark extends StatelessWidget {
+  const VictoriaHeaderMark({
+    super.key,
+    required this.gameVersion,
+    this.compact = false,
+  });
+
+  final String gameVersion;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = compact ? 72.0 : 86.0;
+    final titleSize = compact ? 33.0 : 38.0;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: iconSize,
+          width: iconSize,
+          child: Image.asset('assets/brand/app_icon_256.png'),
+        ),
+        SizedBox(height: compact ? 4 : 8),
+        Text(
+          'Victoria 3 Mod Launcher',
+          style: vicTitle(context, size: titleSize),
+        ),
+        const SizedBox(height: 10),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xff063f3b),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: VicColors.gold),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+            child: Text(
+              gameVersion.isEmpty ? 'unknown' : 'v$gameVersion',
+              style: const TextStyle(
+                color: VicColors.gold,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -140,7 +319,15 @@ class GildedPanel extends StatelessWidget {
                         style: vicLabel(context, size: 13),
                       ),
                     ),
-                  if (trailing != null) trailing!,
+                  if (trailing != null)
+                    DefaultTextStyle(
+                      style: const TextStyle(
+                        color: VicColors.muted,
+                        fontSize: 13,
+                        decoration: TextDecoration.none,
+                      ),
+                      child: trailing!,
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -173,7 +360,7 @@ class GildedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = large ? 74.0 : 46.0;
+    final height = large ? 64.0 : 46.0;
     return SizedBox(
       height: height,
       child: DecoratedBox(
@@ -212,8 +399,9 @@ class GildedButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Georgia',
-                      fontSize: large ? 31 : 17,
+                      fontSize: large ? 28 : 17,
                       color: VicColors.parchment,
+                      decoration: TextDecoration.none,
                       fontWeight: FontWeight.w600,
                       letterSpacing: large ? 5 : 0,
                       shadows: const [

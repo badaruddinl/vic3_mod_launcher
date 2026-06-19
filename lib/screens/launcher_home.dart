@@ -15,6 +15,7 @@ import '../services/launcher_config.dart';
 import '../services/path_service.dart';
 import '../services/playset_service.dart';
 import '../services/update_service.dart';
+import '../widgets/victoria_ui.dart';
 import 'home_dashboard.dart';
 import 'settings_screen.dart';
 
@@ -1150,14 +1151,14 @@ class _UpdateIcon extends StatelessWidget {
       return const SizedBox(
         width: 18,
         height: 18,
-        child: CircularProgressIndicator(strokeWidth: 2),
+        child: CircularProgressIndicator(strokeWidth: 2, color: VicColors.gold),
       );
     }
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const Icon(Icons.system_update_alt),
+        const Icon(Icons.system_update_alt, color: VicColors.gold),
         if (hasUpdate)
           Positioned(
             right: -1,
