@@ -1,5 +1,6 @@
 import 'package:path/path.dart' as p;
 
+import '../constants.dart';
 import 'json_service.dart';
 import 'path_service.dart';
 
@@ -10,6 +11,7 @@ class LauncherConfig {
     required this.extraModRoots,
     required this.autoRepair,
     required this.debugMode,
+    required this.updateManifestUrl,
   });
 
   final String userDataPath;
@@ -17,6 +19,7 @@ class LauncherConfig {
   final List<String> extraModRoots;
   final bool autoRepair;
   final bool debugMode;
+  final String updateManifestUrl;
 
   String get modPath => p.join(userDataPath, 'mod');
   String get contentLoadPath => p.join(userDataPath, 'content_load.json');
@@ -28,6 +31,7 @@ class LauncherConfig {
     List<String>? extraModRoots,
     bool? autoRepair,
     bool? debugMode,
+    String? updateManifestUrl,
   }) {
     return LauncherConfig(
       userDataPath: userDataPath ?? this.userDataPath,
@@ -35,6 +39,7 @@ class LauncherConfig {
       extraModRoots: extraModRoots ?? this.extraModRoots,
       autoRepair: autoRepair ?? this.autoRepair,
       debugMode: debugMode ?? this.debugMode,
+      updateManifestUrl: updateManifestUrl ?? this.updateManifestUrl,
     );
   }
 
@@ -65,6 +70,10 @@ class LauncherConfig {
           .toList(),
       autoRepair: json['autoRepair'] as bool? ?? true,
       debugMode: json['debugMode'] as bool? ?? false,
+      updateManifestUrl:
+          (json['updateManifestUrl'] as String?)?.trim().isNotEmpty == true
+          ? (json['updateManifestUrl'] as String).trim()
+          : defaultUpdateManifestUrl,
     );
   }
 
@@ -75,6 +84,7 @@ class LauncherConfig {
       'extraModRoots': extraModRoots,
       'autoRepair': autoRepair,
       'debugMode': debugMode,
+      'updateManifestUrl': updateManifestUrl,
     });
   }
 }

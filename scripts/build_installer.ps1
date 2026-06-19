@@ -6,6 +6,9 @@ $distDir = Join-Path $root "dist"
 $installerScript = Join-Path $root "installer\vic3_mod_launcher.iss"
 $iconFile = Join-Path $root "windows\runner\resources\app_icon.ico"
 $installerPath = Join-Path $distDir "Vic3ModLauncher-Setup.exe"
+$manifestPath = Join-Path $distDir "latest.json"
+$localTestManifestPath = Join-Path $distDir "latest.local-test.json"
+$releaseBaseUrl = "https://github.com/badaruddinl/vic3_mod_launcher/releases/latest/download"
 
 function Find-InnoCompiler {
   $command = Get-Command ISCC.exe -ErrorAction SilentlyContinue
@@ -108,4 +111,27 @@ if (-not (Test-Path -LiteralPath $installerPath)) {
   throw "Installer was not created: $installerPath"
 }
 
+$hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installerPath).Hash.ToLowerInvariant()
+$manifest = [ordered]@{
+  version = $version.Display
+  buildNumber = [int]($version.File.Split(".")[-1])
+  installerUrl = "$releaseBaseUrl/Vic3ModLauncher-Setup.exe"
+  sha256 = $hash
+  publishedAt = (Get-Date).ToUniversalTime().ToString("o")
+  notes = "See the GitHub release notes for changes."
+}
+$manifest | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+
+$localTestManifest = [ordered]@{
+  version = $version.Display
+  buildNumber = ([int]($version.File.Split(".")[-1]) + 1)
+  installerUrl = $installerPath
+  sha256 = $hash
+  publishedAt = (Get-Date).ToUniversalTime().ToString("o")
+  notes = "Local update-flow test manifest. It points to the installer built on this machine."
+}
+$localTestManifest | ConvertTo-Json | Set-Content -LiteralPath $localTestManifestPath -Encoding UTF8
+
 Write-Host "Installer: $installerPath"
+Write-Host "Update manifest: $manifestPath"
+Write-Host "Local test manifest: $localTestManifestPath"

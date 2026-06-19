@@ -69,3 +69,44 @@ class SavedPlayset {
   final String path;
   final DateTime modifiedAt;
 }
+
+class AppVersion {
+  const AppVersion({required this.version, required this.buildNumber});
+
+  final String version;
+  final int buildNumber;
+
+  String get label => buildNumber > 0 ? '$version+$buildNumber' : version;
+}
+
+class UpdateInfo {
+  const UpdateInfo({
+    required this.version,
+    required this.buildNumber,
+    required this.installerUrl,
+    required this.sha256,
+    required this.notes,
+    required this.publishedAt,
+  });
+
+  final String version;
+  final int buildNumber;
+  final String installerUrl;
+  final String sha256;
+  final String notes;
+  final DateTime? publishedAt;
+
+  String get label => buildNumber > 0 ? '$version+$buildNumber' : version;
+}
+
+class UpdateCheckResult {
+  const UpdateCheckResult({
+    required this.current,
+    required this.latest,
+    required this.updateAvailable,
+  });
+
+  final AppVersion current;
+  final UpdateInfo latest;
+  final bool updateAvailable;
+}

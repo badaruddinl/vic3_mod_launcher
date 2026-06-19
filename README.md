@@ -111,3 +111,58 @@ Start Menu\Victoria 3 Mod Launcher\Uninstall Victoria 3 Mod Launcher.lnk
 Uninstaller bawaan Inno disimpan di folder install sebagai `unins000.exe` dan didaftarkan ke Windows Installed Apps.
 
 File runtime pendukung Flutter Windows seperti `flutter_windows.dll` dan folder `data\flutter_assets` tetap dibutuhkan agar app berjalan. Installer memberi atribut hidden pada file/folder pendukung tersebut, sehingga folder install normalnya hanya menampilkan launcher dan uninstaller di Explorer default.
+
+## Update release
+
+App mengecek update dari manifest JSON. Default URL:
+
+```text
+https://github.com/badaruddinl/vic3_mod_launcher/releases/latest/download/latest.json
+```
+
+Di aplikasi, buka menu update di kanan atas:
+
+- `Check for Updates`: cek versi terbaru.
+- `Update Source`: ganti URL manifest, termasuk ke file lokal untuk testing.
+
+Build installer juga membuat manifest:
+
+```text
+dist\latest.json
+dist\latest.local-test.json
+```
+
+Isi manifest:
+
+```json
+{
+  "version": "1.0.1",
+  "buildNumber": 2,
+  "installerUrl": "https://github.com/badaruddinl/vic3_mod_launcher/releases/latest/download/Vic3ModLauncher-Setup.exe",
+  "sha256": "...",
+  "publishedAt": "2026-06-19T00:00:00Z",
+  "notes": "Release notes"
+}
+```
+
+Alur release:
+
+1. Naikkan `version` di `pubspec.yaml`, contoh `1.0.1+2`.
+2. Jalankan `.\scripts\build_installer.ps1`.
+3. Upload `dist\Vic3ModLauncher-Setup.exe` dan `dist\latest.json` ke GitHub Release atau hosting publik.
+4. App terinstall akan melihat update jika versi manifest lebih baru dari versi lokal.
+
+Untuk test mekanisme update lokal:
+
+1. Install app dari `dist\Vic3ModLauncher-Setup.exe`.
+2. Buka app, pilih menu update di kanan atas.
+3. Pilih `Update Source`.
+4. Isi path lokal:
+
+```text
+D:\Victoria3Mods\dump-elevated-true\dist\latest.local-test.json
+```
+
+5. Pilih `Check for Updates`.
+
+Manifest lokal ini sengaja memakai build number lebih tinggi dan menunjuk ke installer lokal yang baru dibuat.

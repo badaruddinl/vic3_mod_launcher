@@ -14,6 +14,7 @@ import '../services/json_service.dart';
 import '../services/launcher_config.dart';
 import '../services/path_service.dart';
 import '../services/playset_service.dart';
+import '../services/update_service.dart';
 import '../widgets/mod_manager.dart';
 import '../widgets/path_header.dart';
 import '../widgets/side_panel.dart';
@@ -39,6 +40,7 @@ class _LauncherHomeState extends State<LauncherHome> {
 
   String gameVersion = '';
   bool loading = true;
+  bool checkingUpdates = false;
 
   @override
   void initState() {
@@ -767,6 +769,175 @@ $process.Id
     _log('Deleted playset: ${playset.name}');
   }
 
+  Future<void> _checkForUpdates() async {
+    if (checkingUpdates) return;
+    setState(() => checkingUpdates = true);
+    try {
+      final result = await const UpdateService().check(
+        config.updateManifestUrl,
+      );
+      _log(
+        'Update check: current ${result.current.label}, latest ${result.latest.label}',
+      );
+      if (!mounted) return;
+      if (!result.updateAvailable) {
+        _showMessage(
+          'Tidak ada update',
+          'Versi terpasang sudah terbaru.\n\nCurrent: ${result.current.label}\nLatest: ${result.latest.label}',
+        );
+        return;
+      }
+      await _showUpdateDialog(result);
+    } catch (error) {
+      _log('Update check failed: $error');
+      if (mounted) {
+        _showMessage('Update gagal dicek', error.toString());
+      }
+    } finally {
+      if (mounted) setState(() => checkingUpdates = false);
+    }
+  }
+
+  Future<void> _showUpdateDialog(UpdateCheckResult result) async {
+    final install = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update ${result.latest.label} tersedia'),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: SelectableText(
+            [
+              'Current: ${result.current.label}',
+              'Latest: ${result.latest.label}',
+              if (result.latest.publishedAt != null)
+                'Published: ${result.latest.publishedAt!.toLocal()}',
+              '',
+              result.latest.notes.isEmpty
+                  ? 'Tidak ada release notes.'
+                  : result.latest.notes,
+            ].join('\n'),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Later'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.download_outlined),
+            label: const Text('Download & Install'),
+          ),
+        ],
+      ),
+    );
+    if (install == true) {
+      await _downloadAndInstallUpdate(result.latest);
+    }
+  }
+
+  Future<void> _downloadAndInstallUpdate(UpdateInfo update) async {
+    var received = 0;
+    int? total;
+    StateSetter? setDialogState;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          setDialogState = setState;
+          final progress = total == null || total == 0
+              ? null
+              : received / total!;
+          return AlertDialog(
+            title: Text('Downloading ${update.label}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinearProgressIndicator(value: progress),
+                const SizedBox(height: 12),
+                Text(
+                  total == null
+                      ? '${(received / 1024 / 1024).toStringAsFixed(1)} MB'
+                      : '${(received / 1024 / 1024).toStringAsFixed(1)} / ${(total! / 1024 / 1024).toStringAsFixed(1)} MB',
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    try {
+      final installer = await const UpdateService().downloadInstaller(
+        update,
+        onProgress: (nextReceived, nextTotal) {
+          received = nextReceived;
+          total = nextTotal;
+          setDialogState?.call(() {});
+        },
+      );
+      if (mounted) Navigator.of(context).pop();
+      await const UpdateService().launchInstaller(installer);
+      _log('Update installer launched: ${installer.path}');
+      if (mounted) {
+        _showMessage(
+          'Installer update dijalankan',
+          'Launcher akan ditutup agar installer bisa mengganti file aplikasi.',
+        );
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      exit(0);
+    } catch (error) {
+      if (mounted) Navigator.of(context).pop();
+      _log('Update download failed: $error');
+      if (mounted) {
+        _showMessage('Update gagal didownload', error.toString());
+      }
+    }
+  }
+
+  Future<void> _editUpdateSource() async {
+    final controller = TextEditingController(text: config.updateManifestUrl);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update Source'),
+        content: SizedBox(
+          width: 560,
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Manifest URL or local file path',
+              helperText:
+                  'Example: https://.../latest.json or D:\\path\\latest.json',
+            ),
+            maxLines: 2,
+            onSubmitted: (value) => Navigator.of(context).pop(value),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || value.trim().isEmpty) return;
+    setState(() => config = config.copyWith(updateManifestUrl: value.trim()));
+    await config.save();
+    _log('Update source changed: ${value.trim()}');
+  }
+
   List<String> get availableModIds {
     final ids = mods.keys.where((id) => !activeModIds.contains(id)).toList();
     ids.sort(
@@ -809,6 +980,36 @@ $process.Id
       appBar: AppBar(
         title: const Text(appName),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Updates',
+            icon: checkingUpdates
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.system_update_alt),
+            onSelected: (value) {
+              if (value == 'check') _checkForUpdates();
+              if (value == 'source') _editUpdateSource();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'check',
+                child: ListTile(
+                  leading: Icon(Icons.search),
+                  title: Text('Check for Updates'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'source',
+                child: ListTile(
+                  leading: Icon(Icons.link),
+                  title: Text('Update Source'),
+                ),
+              ),
+            ],
+          ),
           Row(
             children: [
               const Text('Debug mode'),
