@@ -14,6 +14,7 @@ class PathHeader extends StatelessWidget {
     required this.onDiagnose,
     required this.onImportZip,
     required this.onRepair,
+    required this.onRestoreBackup,
     required this.onSave,
     required this.onLaunch,
     required this.onAutoRepairChanged,
@@ -28,6 +29,7 @@ class PathHeader extends StatelessWidget {
   final VoidCallback onDiagnose;
   final VoidCallback onImportZip;
   final VoidCallback onRepair;
+  final VoidCallback onRestoreBackup;
   final VoidCallback onSave;
   final VoidCallback onLaunch;
   final ValueChanged<bool> onAutoRepairChanged;
@@ -110,6 +112,12 @@ class PathHeader extends StatelessWidget {
                   onPressed: onRepair,
                   icon: const Icon(Icons.build_outlined),
                   label: const Text('Repair Descriptors'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: onRestoreBackup,
+                  icon: const Icon(Icons.restore_page_outlined),
+                  label: const Text('Restore Backup'),
                 ),
                 const Spacer(),
                 FilledButton.tonalIcon(

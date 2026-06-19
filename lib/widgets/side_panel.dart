@@ -10,20 +10,28 @@ class SidePanel extends StatelessWidget {
     required this.dlcs,
     required this.disabledDlcs,
     required this.logs,
+    required this.playsets,
     required this.onToggleDlc,
     required this.onEnableAllDlc,
     required this.onAddExtraRoot,
     required this.onRemoveExtraRoot,
+    required this.onSavePlaysetAs,
+    required this.onLoadPlayset,
+    required this.onDeletePlayset,
   });
 
   final LauncherConfig config;
   final List<DlcInfo> dlcs;
   final Set<String> disabledDlcs;
   final List<String> logs;
+  final List<SavedPlayset> playsets;
   final ValueChanged<DlcInfo> onToggleDlc;
   final VoidCallback onEnableAllDlc;
   final VoidCallback onAddExtraRoot;
   final ValueChanged<String> onRemoveExtraRoot;
+  final VoidCallback onSavePlaysetAs;
+  final ValueChanged<SavedPlayset> onLoadPlayset;
+  final ValueChanged<SavedPlayset> onDeletePlayset;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +40,7 @@ class SidePanel extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            flex: 4,
+            flex: 3,
             child: _Panel(
               title: 'DLC',
               trailing: TextButton(
@@ -65,7 +73,42 @@ class SidePanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Expanded(
-            flex: 3,
+            flex: 2,
+            child: _Panel(
+              title: 'Playsets',
+              trailing: IconButton(
+                onPressed: onSavePlaysetAs,
+                icon: const Icon(Icons.save_as_outlined),
+                tooltip: 'Save current playset',
+              ),
+              child: ListView(
+                children: [
+                  for (final playset in playsets)
+                    ListTile(
+                      dense: true,
+                      title: Text(
+                        playset.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        playset.modifiedAt.toLocal().toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () => onLoadPlayset(playset),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => onDeletePlayset(playset),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            flex: 2,
             child: _Panel(
               title: 'Folder mod tambahan',
               trailing: IconButton(

@@ -35,3 +35,37 @@ class DlcInfo {
 }
 
 enum VersionStatus { ok, warning, unknown }
+
+class ModValidation {
+  const ModValidation({
+    required this.folderExists,
+    required this.metadataExists,
+    required this.descriptorExists,
+    required this.mountedLastRun,
+  });
+
+  final bool folderExists;
+  final bool metadataExists;
+  final bool descriptorExists;
+  final bool mountedLastRun;
+
+  ModHealth get health {
+    if (!folderExists || !metadataExists) return ModHealth.error;
+    if (!descriptorExists || !mountedLastRun) return ModHealth.warning;
+    return ModHealth.ok;
+  }
+}
+
+enum ModHealth { ok, warning, error }
+
+class SavedPlayset {
+  const SavedPlayset({
+    required this.name,
+    required this.path,
+    required this.modifiedAt,
+  });
+
+  final String name;
+  final String path;
+  final DateTime modifiedAt;
+}

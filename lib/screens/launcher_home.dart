@@ -13,6 +13,7 @@ import '../services/descriptor_service.dart';
 import '../services/json_service.dart';
 import '../services/launcher_config.dart';
 import '../services/path_service.dart';
+import '../services/playset_service.dart';
 import '../widgets/mod_manager.dart';
 import '../widgets/path_header.dart';
 import '../widgets/side_panel.dart';
@@ -33,6 +34,8 @@ class _LauncherHomeState extends State<LauncherHome> {
   final List<DlcInfo> dlcs = [];
   final Set<String> disabledDlcs = {};
   final List<String> logs = [];
+  final Map<String, ModValidation> modValidations = {};
+  List<SavedPlayset> savedPlaysets = const [];
 
   String gameVersion = '';
   bool loading = true;
@@ -64,6 +67,8 @@ class _LauncherHomeState extends State<LauncherHome> {
       ..addAll(await _scanMods());
     _loadPlayset();
     _scanDlcs();
+    _refreshValidations();
+    _refreshSavedPlaysets();
     selectedAvailable.clear();
     selectedActive.clear();
     _log(
@@ -305,16 +310,9 @@ class _LauncherHomeState extends State<LauncherHome> {
   }
 
   Future<void> _savePlayset({bool notify = true}) async {
-    final enabled = activeModIds
-        .where(mods.containsKey)
-        .map((id) => {'path': _contentLoadRefForMod(mods[id]!)})
-        .toList();
-    final disabled = <Map<String, String>>[];
-    for (final dlc in dlcs) {
-      if (disabledDlcs.contains(dlc.ref.toLowerCase())) {
-        disabled.add({'path': dlc.ref});
-      }
-    }
+    final enabled = _enabledModEntries();
+    final disabled = _disabledDlcEntries();
+    _backupContentLoad();
     writePrettyJson(config.contentLoadPath, {
       'enabledMods': enabled,
       'orderedListMods': enabled,
@@ -331,6 +329,45 @@ class _LauncherHomeState extends State<LauncherHome> {
         'File content_load.json sudah diperbarui.',
       );
     }
+  }
+
+  List<Map<String, String>> _enabledModEntries() {
+    return activeModIds
+        .where(mods.containsKey)
+        .map((id) => {'path': _contentLoadRefForMod(mods[id]!)})
+        .toList();
+  }
+
+  List<Map<String, String>> _disabledDlcEntries() {
+    final disabled = <Map<String, String>>[];
+    for (final dlc in dlcs) {
+      if (disabledDlcs.contains(dlc.ref.toLowerCase())) {
+        disabled.add({'path': dlc.ref});
+      }
+    }
+    return disabled;
+  }
+
+  String get _backupPath => '${config.contentLoadPath}.bak';
+
+  void _backupContentLoad() {
+    final source = File(config.contentLoadPath);
+    if (!source.existsSync()) return;
+    source.copySync(_backupPath);
+  }
+
+  Future<void> _restoreBackup() async {
+    final backup = File(_backupPath);
+    if (!backup.existsSync()) {
+      _showMessage('Backup tidak ada', 'Belum ada backup content_load.json.');
+      return;
+    }
+    backup.copySync(config.contentLoadPath);
+    await _refresh();
+    _showMessage(
+      'Backup dipulihkan',
+      'content_load.json dipulihkan dari backup.',
+    );
   }
 
   String _contentLoadPathValue(Object? item) {
@@ -359,6 +396,39 @@ class _LauncherHomeState extends State<LauncherHome> {
 
   String _contentLoadRefForMod(ModInfo mod) {
     return PathService.normalizePath(mod.contentPath);
+  }
+
+  void _refreshValidations() {
+    final debugLog = File(p.join(config.userDataPath, 'logs', 'debug.log'));
+    final debugText = debugLog.existsSync()
+        ? debugLog.readAsStringSync().replaceAll('\\', '/').toLowerCase()
+        : '';
+    modValidations
+      ..clear()
+      ..addEntries(
+        mods.entries.map((entry) {
+          final mod = entry.value;
+          final contentPath = PathService.normalizePath(mod.contentPath);
+          final diskPath = contentPath.replaceAll('/', p.separator);
+          final validation = ModValidation(
+            folderExists: Directory(diskPath).existsSync(),
+            metadataExists: File(
+              p.join(diskPath, '.metadata', 'metadata.json'),
+            ).existsSync(),
+            descriptorExists: File(
+              p.join(diskPath, 'descriptor.mod'),
+            ).existsSync(),
+            mountedLastRun: debugText.contains(
+              'mounted data: ${contentPath.toLowerCase()}',
+            ),
+          );
+          return MapEntry(entry.key, validation);
+        }),
+      );
+  }
+
+  void _refreshSavedPlaysets() {
+    savedPlaysets = const PlaysetService().list();
   }
 
   Future<void> _launchGame() async {
@@ -620,6 +690,83 @@ $process.Id
     });
   }
 
+  void _reorderActive(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      final id = activeModIds.removeAt(oldIndex);
+      activeModIds.insert(newIndex, id);
+    });
+  }
+
+  Future<void> _savePlaysetAs() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save Playset'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Playset name'),
+          onSubmitted: (value) => Navigator.of(context).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.trim().isEmpty) return;
+    const PlaysetService().save(
+      name: name,
+      enabledMods: _enabledModEntries(),
+      disabledDlc: _disabledDlcEntries(),
+    );
+    setState(_refreshSavedPlaysets);
+    _log('Saved named playset: ${name.trim()}');
+  }
+
+  Future<void> _loadSavedPlayset(SavedPlayset playset) async {
+    final data = const PlaysetService().load(playset);
+    activeModIds.clear();
+    disabledDlcs.clear();
+
+    final enabled = (data['orderedListMods'] as List?)?.isNotEmpty == true
+        ? data['orderedListMods'] as List
+        : data['enabledMods'] as List? ?? const [];
+    for (final item in enabled) {
+      final id = _modIdFromContentLoadItem(item);
+      if (id.isNotEmpty && mods.containsKey(id) && !activeModIds.contains(id)) {
+        activeModIds.add(id);
+      }
+    }
+
+    for (final item in data['disabledDLC'] as List? ?? const []) {
+      disabledDlcs.add(
+        _contentLoadPathValue(item).replaceAll('\\', '/').toLowerCase(),
+      );
+    }
+    await _savePlayset(notify: false);
+    setState(() {});
+    _showMessage(
+      'Playset dimuat',
+      'Playset "${playset.name}" sudah dimuat dan disimpan.',
+    );
+  }
+
+  void _deleteSavedPlayset(SavedPlayset playset) {
+    const PlaysetService().delete(playset);
+    setState(_refreshSavedPlaysets);
+    _log('Deleted playset: ${playset.name}');
+  }
+
   List<String> get availableModIds {
     final ids = mods.keys.where((id) => !activeModIds.contains(id)).toList();
     ids.sort(
@@ -690,6 +837,7 @@ $process.Id
             onDiagnose: _diagnose,
             onImportZip: _importZip,
             onRepair: () => _repairDescriptors(showDialogAfter: true),
+            onRestoreBackup: _restoreBackup,
             onSave: _savePlayset,
             onLaunch: _launchGame,
             onAutoRepairChanged: (value) async {
@@ -708,6 +856,7 @@ $process.Id
                     activeIds: activeModIds,
                     selectedAvailable: selectedAvailable,
                     selectedActive: selectedActive,
+                    validations: modValidations,
                     onAvailableTap: (id) => setState(
                       () => selectedAvailable.contains(id)
                           ? selectedAvailable.remove(id)
@@ -720,6 +869,7 @@ $process.Id
                     ),
                     onEnable: _enableSelected,
                     onDisable: _disableSelected,
+                    onActiveReorder: _reorderActive,
                     onUp: () => _moveSelected(-1),
                     onDown: () => _moveSelected(1),
                     onTop: () => _moveSelectedToEdge(bottom: false),
@@ -733,6 +883,7 @@ $process.Id
                     dlcs: dlcs,
                     disabledDlcs: disabledDlcs,
                     logs: logs,
+                    playsets: savedPlaysets,
                     onToggleDlc: (dlc) {
                       setState(() {
                         final key = dlc.ref.toLowerCase();
@@ -744,6 +895,9 @@ $process.Id
                     onEnableAllDlc: () => setState(disabledDlcs.clear),
                     onAddExtraRoot: _addExtraRoot,
                     onRemoveExtraRoot: _removeExtraRoot,
+                    onSavePlaysetAs: _savePlaysetAs,
+                    onLoadPlayset: _loadSavedPlayset,
+                    onDeletePlayset: _deleteSavedPlayset,
                   ),
                 ),
               ],

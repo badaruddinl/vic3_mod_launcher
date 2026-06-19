@@ -73,3 +73,15 @@ Config launcher disimpan di:
 ```text
 %APPDATA%\Vic3ModLauncher\config.json
 ```
+
+## Build installer `.exe`
+
+```powershell
+.\scripts\build_installer.ps1
+```
+
+Output:
+
+```text
+dist\Vic3ModLauncher-Setup.exe
+```
