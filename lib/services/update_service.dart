@@ -58,10 +58,8 @@ class UpdateService {
     final source = update.installerUrl.trim();
     final uri = Uri.tryParse(source);
 
-    if (uri == null || uri.scheme.isEmpty || uri.scheme == 'file') {
-      final sourceFile = File(
-        uri?.scheme == 'file' ? uri!.toFilePath() : source,
-      );
+    if (_isLocalFileLocation(source, uri)) {
+      final sourceFile = File(_localFilePath(source, uri));
       if (!sourceFile.existsSync()) {
         throw Exception('Installer file not found: ${sourceFile.path}');
       }
@@ -75,7 +73,7 @@ class UpdateService {
         onProgress(received, total);
       }
       await output.close();
-    } else if (uri.scheme == 'http' || uri.scheme == 'https') {
+    } else if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
       final client = HttpClient();
       try {
         final request = await client.getUrl(uri);
@@ -148,13 +146,13 @@ class UpdateService {
     }
 
     final uri = Uri.tryParse(value);
-    if (uri == null || uri.scheme.isEmpty || uri.scheme == 'file') {
-      final file = File(uri?.scheme == 'file' ? uri!.toFilePath() : value);
+    if (_isLocalFileLocation(value, uri)) {
+      final file = File(_localFilePath(value, uri));
       if (!file.existsSync()) throw Exception('Manifest not found: $value');
       return file.readAsString();
     }
 
-    if (uri.scheme != 'http' && uri.scheme != 'https') {
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
       throw UnsupportedError('Unsupported manifest URL: $value');
     }
 
@@ -198,6 +196,20 @@ class UpdateService {
         .where((part) => part.isNotEmpty)
         .map((part) => int.tryParse(part) ?? 0)
         .toList();
+  }
+
+  bool _isLocalFileLocation(String value, Uri? uri) {
+    if (uri == null || uri.scheme.isEmpty || uri.scheme == 'file') return true;
+    if (Platform.isWindows && RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(value)) {
+      return true;
+    }
+    if (value.startsWith(r'\\')) return true;
+    return false;
+  }
+
+  String _localFilePath(String value, Uri? uri) {
+    if (uri != null && uri.scheme == 'file') return uri.toFilePath();
+    return value;
   }
 
   HttpException _httpUpdateException(String action, int statusCode, Uri uri) {
