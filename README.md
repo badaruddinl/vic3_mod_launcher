@@ -76,6 +76,12 @@ Config launcher disimpan di:
 
 ## Build installer `.exe`
 
+Installer dibuat dengan Inno Setup. Jika belum ada:
+
+```powershell
+winget install --id JRSoftware.InnoSetup -e
+```
+
 ```powershell
 .\scripts\build_installer.ps1
 ```
@@ -86,12 +92,11 @@ Output:
 dist\Vic3ModLauncher-Setup.exe
 ```
 
-Installer ini punya opsi:
+Installer ini memakai wizard standar Windows/Inno Setup:
 
 - `Install`: install ke folder pilihan, default `C:\Program Files\Victoria 3 Mod Launcher`.
-- `Reinstall / Update`: muncul jika instalasi lama terdeteksi, lalu mengganti file app dengan build baru.
-- `Uninstall`: muncul jika instalasi lama terdeteksi, lalu menghapus app, shortcut, Start Menu, dan entry uninstall Windows.
-- `Remove launcher settings and saved playsets`: opsi tambahan saat uninstall untuk menghapus `%APPDATA%\Vic3ModLauncher`.
+- `Update`: jalankan installer versi baru di atas instalasi lama; Inno akan memakai folder install sebelumnya.
+- `Uninstall`: lewat Windows Installed Apps atau shortcut Start Menu.
 
 Jika folder tujuan berada di `Program Files`, installer akan meminta izin administrator lewat UAC.
 
@@ -103,10 +108,4 @@ Start Menu\Victoria 3 Mod Launcher\Victoria 3 Mod Launcher.lnk
 Start Menu\Victoria 3 Mod Launcher\Uninstall Victoria 3 Mod Launcher.lnk
 ```
 
-Folder install juga berisi uninstaller khusus:
-
-```text
-C:\Program Files\Victoria 3 Mod Launcher\Vic3ModLauncher-Uninstall.exe
-```
-
-Entry uninstall juga didaftarkan ke Windows Installed Apps. Untuk install ke `Program Files`, entry dibuat di machine scope jika installer dijalankan sebagai administrator.
+Uninstaller bawaan Inno disimpan di folder install sebagai `unins000.exe` dan didaftarkan ke Windows Installed Apps.
