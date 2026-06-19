@@ -89,8 +89,8 @@ dist\Vic3ModLauncher-Setup.exe
 Installer ini punya opsi:
 
 - `Install`: install ke folder pilihan, default `C:\Program Files\Victoria 3 Mod Launcher`.
-- `Reinstall / Update`: hapus app lama lalu extract build baru ke folder pilihan.
-- `Uninstall`: hapus app, shortcut Desktop, dan entry uninstall Windows.
+- `Reinstall / Update`: muncul jika instalasi lama terdeteksi, lalu mengganti file app dengan build baru.
+- `Uninstall`: muncul jika instalasi lama terdeteksi, lalu menghapus app, shortcut, Start Menu, dan entry uninstall Windows.
 - `Remove launcher settings and saved playsets`: opsi tambahan saat uninstall untuk menghapus `%APPDATA%\Vic3ModLauncher`.
 
 Jika folder tujuan berada di `Program Files`, installer akan meminta izin administrator lewat UAC.
@@ -101,6 +101,12 @@ Installer juga membuat:
 Desktop\Victoria 3 Mod Launcher.lnk
 Start Menu\Victoria 3 Mod Launcher\Victoria 3 Mod Launcher.lnk
 Start Menu\Victoria 3 Mod Launcher\Uninstall Victoria 3 Mod Launcher.lnk
+```
+
+Folder install juga berisi uninstaller khusus:
+
+```text
+C:\Program Files\Victoria 3 Mod Launcher\Vic3ModLauncher-Uninstall.exe
 ```
 
 Entry uninstall juga didaftarkan ke Windows Installed Apps. Untuk install ke `Program Files`, entry dibuat di machine scope jika installer dijalankan sebagai administrator.
