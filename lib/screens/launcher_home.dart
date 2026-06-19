@@ -5,12 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
 import '../models.dart';
+import '../services/active_mod_order_service.dart';
 import '../services/app_logger.dart';
 import '../services/content_load_service.dart';
 import '../services/diagnostic_service.dart';
 import '../services/dlc_library_service.dart';
+import '../services/game_launch_service.dart';
 import '../services/launcher_config.dart';
 import '../services/mod_library_service.dart';
+import '../services/mod_validation_service.dart';
 import '../services/path_service.dart';
 import '../services/playset_service.dart';
 import '../services/update_service.dart';
@@ -163,31 +166,10 @@ class _LauncherHomeState extends State<LauncherHome> {
   }
 
   void _refreshValidations() {
-    final debugLog = File(p.join(config.userDataPath, 'logs', 'debug.log'));
-    final debugText = debugLog.existsSync()
-        ? debugLog.readAsStringSync().replaceAll('\\', '/').toLowerCase()
-        : '';
     modValidations
       ..clear()
-      ..addEntries(
-        mods.entries.map((entry) {
-          final mod = entry.value;
-          final contentPath = PathService.normalizePath(mod.contentPath);
-          final diskPath = contentPath.replaceAll('/', p.separator);
-          final validation = ModValidation(
-            folderExists: Directory(diskPath).existsSync(),
-            metadataExists: File(
-              p.join(diskPath, '.metadata', 'metadata.json'),
-            ).existsSync(),
-            descriptorExists: File(
-              p.join(diskPath, 'descriptor.mod'),
-            ).existsSync(),
-            mountedLastRun: debugText.contains(
-              'mounted data: ${contentPath.toLowerCase()}',
-            ),
-          );
-          return MapEntry(entry.key, validation);
-        }),
+      ..addAll(
+        const ModValidationService().validate(config: config, mods: mods),
       );
   }
 
@@ -198,70 +180,88 @@ class _LauncherHomeState extends State<LauncherHome> {
   Future<void> _launchGame() async {
     try {
       await _savePlayset(notify: false);
-      final exe = PathService.findGameExe(config.gameRoot);
-      if (exe.isEmpty) {
-        _showMessage(
-          'Game tidak ditemukan',
-          'victoria3.exe tidak ditemukan. Pilih folder install Victoria 3 yang benar.',
-        );
-        return;
-      }
-      final args = config.debugMode ? ['-debug_mode'] : <String>[];
-      final pid = await _startGameProcess(exe, args);
-      _log(
-        'Launch command sent. PID: ${pid.isEmpty ? 'unknown' : pid}. EXE: $exe ${args.join(' ')}',
+      final result = await const GameLaunchService().launch(
+        GameLaunchRequest(
+          gameRoot: config.gameRoot,
+          debugMode: config.debugMode,
+        ),
       );
+      _log(
+        'Launch command sent. PID: ${result.pid.isEmpty ? 'unknown' : result.pid}. EXE: ${result.displayCommand}',
+      );
+    } on GameExecutableNotFoundException catch (error) {
+      _showMessage('Game tidak ditemukan', error.toString());
     } catch (error) {
       _log('Launch failed: $error');
       _showMessage('Launch gagal', 'Game tidak berhasil dijalankan.\n\n$error');
     }
   }
 
-  Future<String> _startGameProcess(String exe, List<String> args) async {
-    if (!Platform.isWindows) {
-      final process = await Process.start(
-        exe,
-        args,
-        workingDirectory: p.dirname(exe),
-        mode: ProcessStartMode.detached,
+  void _enableSelected() {
+    setState(() {
+      final next = const ActiveModOrderService().enableSelected(
+        activeIds: activeModIds,
+        selectedAvailable: selectedAvailable,
       );
-      return process.pid.toString();
-    }
+      activeModIds
+        ..clear()
+        ..addAll(next);
+      selectedAvailable.clear();
+    });
+  }
 
-    const script = r'''
-$ErrorActionPreference = 'Stop'
-$file = $env:VIC3_LAUNCH_FILE
-$work = $env:VIC3_LAUNCH_WORK
-$argLine = $env:VIC3_LAUNCH_ARGS
-if ([string]::IsNullOrWhiteSpace($argLine)) {
-  $process = Start-Process -FilePath $file -WorkingDirectory $work -PassThru
-} else {
-  $process = Start-Process -FilePath $file -WorkingDirectory $work -ArgumentList $argLine -PassThru
-}
-$process.Id
-''';
-    final result = await Process.run(
-      'powershell',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script],
-      environment: {
-        'VIC3_LAUNCH_FILE': exe,
-        'VIC3_LAUNCH_WORK': p.dirname(exe),
-        'VIC3_LAUNCH_ARGS': args.join(' '),
-      },
-    );
-    if (result.exitCode != 0) {
-      final stderr = result.stderr.toString().trim();
-      final stdout = result.stdout.toString().trim();
-      throw Exception(
-        [
-          if (stderr.isNotEmpty) stderr,
-          if (stdout.isNotEmpty) stdout,
-          if (stderr.isEmpty && stdout.isEmpty)
-            'PowerShell Start-Process exit code ${result.exitCode}',
-        ].join('\n'),
+  void _disableSelected() {
+    setState(() {
+      final next = const ActiveModOrderService().disableSelected(
+        activeIds: activeModIds,
+        selectedActive: selectedActive,
       );
-    }
-    return result.stdout.toString().trim();
+      activeModIds
+        ..clear()
+        ..addAll(next);
+      selectedActive.clear();
+    });
+  }
+
+  void _moveSelected(int delta) {
+    if (selectedActive.isEmpty) return;
+    setState(() {
+      final next = const ActiveModOrderService().moveSelected(
+        activeIds: activeModIds,
+        selectedActive: selectedActive,
+        delta: delta,
+      );
+      activeModIds
+        ..clear()
+        ..addAll(next);
+    });
+  }
+
+  void _moveSelectedToEdge({required bool bottom}) {
+    if (selectedActive.isEmpty) return;
+    setState(() {
+      final next = const ActiveModOrderService().moveSelectedToEdge(
+        activeIds: activeModIds,
+        selectedActive: selectedActive,
+        bottom: bottom,
+      );
+      activeModIds
+        ..clear()
+        ..addAll(next);
+    });
+  }
+
+  void _reorderActive(int oldIndex, int newIndex) {
+    setState(() {
+      final next = const ActiveModOrderService().reorder(
+        activeIds: activeModIds,
+        oldIndex: oldIndex,
+        newIndex: newIndex,
+      );
+      activeModIds
+        ..clear()
+        ..addAll(next);
+    });
   }
 
   Future<void> _importZip() async {
@@ -362,68 +362,6 @@ $process.Id
         .toList();
     setState(() => config = config.copyWith(extraModRoots: roots));
     await _refresh();
-  }
-
-  void _enableSelected() {
-    setState(() {
-      for (final id in selectedAvailable) {
-        if (!activeModIds.contains(id)) activeModIds.add(id);
-      }
-      selectedAvailable.clear();
-    });
-  }
-
-  void _disableSelected() {
-    setState(() {
-      activeModIds.removeWhere(selectedActive.contains);
-      selectedActive.clear();
-    });
-  }
-
-  void _moveSelected(int delta) {
-    if (selectedActive.isEmpty) return;
-    setState(() {
-      if (delta < 0) {
-        for (var i = 1; i < activeModIds.length; i++) {
-          if (selectedActive.contains(activeModIds[i]) &&
-              !selectedActive.contains(activeModIds[i - 1])) {
-            final temp = activeModIds[i - 1];
-            activeModIds[i - 1] = activeModIds[i];
-            activeModIds[i] = temp;
-          }
-        }
-      } else {
-        for (var i = activeModIds.length - 2; i >= 0; i--) {
-          if (selectedActive.contains(activeModIds[i]) &&
-              !selectedActive.contains(activeModIds[i + 1])) {
-            final temp = activeModIds[i + 1];
-            activeModIds[i + 1] = activeModIds[i];
-            activeModIds[i] = temp;
-          }
-        }
-      }
-    });
-  }
-
-  void _moveSelectedToEdge({required bool bottom}) {
-    if (selectedActive.isEmpty) return;
-    setState(() {
-      final selected = activeModIds.where(selectedActive.contains).toList();
-      final rest = activeModIds
-          .where((id) => !selectedActive.contains(id))
-          .toList();
-      activeModIds
-        ..clear()
-        ..addAll(bottom ? [...rest, ...selected] : [...selected, ...rest]);
-    });
-  }
-
-  void _reorderActive(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) newIndex -= 1;
-      final id = activeModIds.removeAt(oldIndex);
-      activeModIds.insert(newIndex, id);
-    });
   }
 
   Future<void> _savePlaysetAs() async {
