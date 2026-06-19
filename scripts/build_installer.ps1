@@ -503,7 +503,7 @@ sealed class InstallerForm : Form
         bodyLabel.Text = message;
         backButton.Enabled = false;
         nextButton.Enabled = false;
-        cancelButton.Text = "Close";
+        cancelButton.Text = "Finish";
 
         var label = new Label
         {
