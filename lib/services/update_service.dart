@@ -81,9 +81,10 @@ class UpdateService {
         final request = await client.getUrl(uri);
         final response = await request.close();
         if (response.statusCode < 200 || response.statusCode >= 300) {
-          throw HttpException(
-            'Download failed with HTTP ${response.statusCode}',
-            uri: uri,
+          throw _httpUpdateException(
+            'Installer download failed',
+            response.statusCode,
+            uri,
           );
         }
         final total = response.contentLength >= 0
@@ -162,9 +163,10 @@ class UpdateService {
       final request = await client.getUrl(uri);
       final response = await request.close();
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw HttpException(
-          'Manifest request failed with HTTP ${response.statusCode}',
-          uri: uri,
+        throw _httpUpdateException(
+          'Manifest request failed',
+          response.statusCode,
+          uri,
         );
       }
       return utf8.decode(await response.expand((chunk) => chunk).toList());
@@ -197,4 +199,18 @@ class UpdateService {
         .map((part) => int.tryParse(part) ?? 0)
         .toList();
   }
+
+  HttpException _httpUpdateException(String action, int statusCode, Uri uri) {
+    final githubReleaseAsset =
+        uri.host.equalsIgnoreCase('github.com') &&
+        uri.path.contains('/releases/');
+    final hint = statusCode == 404 && githubReleaseAsset
+        ? '\n\nIf this is a GitHub Release URL, make sure the release asset exists and the repository/release is public. Private GitHub release assets return 404 to this app because it does not use a GitHub token.\n\nFor local testing, set Update Source to dist/latest.local-test.json.'
+        : '';
+    return HttpException('$action with HTTP $statusCode.$hint', uri: uri);
+  }
+}
+
+extension _CaseInsensitiveString on String {
+  bool equalsIgnoreCase(String other) => toLowerCase() == other.toLowerCase();
 }

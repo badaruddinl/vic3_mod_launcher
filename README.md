@@ -120,6 +120,8 @@ App mengecek update dari manifest JSON. Default URL:
 https://github.com/badaruddinl/vic3_mod_launcher/releases/latest/download/latest.json
 ```
 
+URL GitHub Release ini hanya bisa dibaca app jika release asset tersedia dan repo/release bisa diakses publik. Jika repo masih private, GitHub akan mengembalikan HTTP 404 ke app karena app tidak membawa token GitHub.
+
 Di aplikasi, buka menu update di kanan atas:
 
 - `Check for Updates`: cek versi terbaru.
@@ -151,6 +153,12 @@ Alur release:
 2. Jalankan `.\scripts\build_installer.ps1`.
 3. Upload `dist\Vic3ModLauncher-Setup.exe` dan `dist\latest.json` ke GitHub Release atau hosting publik.
 4. App terinstall akan melihat update jika versi manifest lebih baru dari versi lokal.
+
+Untuk repo private, jangan pakai URL release private sebagai update source aplikasi publik. Pilih salah satu:
+
+- jadikan release repo publik;
+- upload `latest.json` dan installer ke hosting publik;
+- pakai file lokal `latest.local-test.json` hanya untuk testing.
 
 Untuk test mekanisme update lokal:
 
