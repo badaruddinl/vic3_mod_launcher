@@ -37,33 +37,6 @@ if (Test-Path -LiteralPath $payloadDir) {
 New-Item -ItemType Directory -Force -Path $payloadDir | Out-Null
 Copy-Item -LiteralPath $zipPath -Destination (Join-Path $payloadDir "Vic3ModLauncher-portable.zip") -Force
 
-$installPs1 = @'
-$ErrorActionPreference = "Stop"
-
-$zip = Join-Path $PSScriptRoot "Vic3ModLauncher-portable.zip"
-$installDir = Join-Path $env:LOCALAPPDATA "Vic3ModLauncher"
-
-New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Expand-Archive -LiteralPath $zip -DestinationPath $installDir -Force
-
-$desktop = [Environment]::GetFolderPath("Desktop")
-$shortcutPath = Join-Path $desktop "Victoria 3 Mod Launcher.lnk"
-$exePath = Join-Path $installDir "vic3_mod_launcher.exe"
-$shell = New-Object -ComObject WScript.Shell
-$shortcut = $shell.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = $exePath
-$shortcut.WorkingDirectory = $installDir
-$shortcut.IconLocation = $exePath
-$shortcut.Save()
-'@
-$installPs1 | Set-Content -LiteralPath (Join-Path $payloadDir "install_from_package.ps1") -Encoding UTF8
-
-$installCmd = @'
-@echo off
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install_from_package.ps1"
-'@
-$installCmd | Set-Content -LiteralPath (Join-Path $payloadDir "install.cmd") -Encoding ASCII
-
 if (Test-Path -LiteralPath $projectDir) {
   Remove-Item -LiteralPath $projectDir -Recurse -Force
 }
@@ -98,63 +71,339 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 static class Program
 {
     [STAThread]
-    static int Main()
+    static int Main(string[] args)
+    {
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+
+        var requestedAction = args.Length == 0 ? "" : args[0].ToLowerInvariant();
+        var removeSettings = Array.Exists(args, item => item.Equals("--remove-settings", StringComparison.OrdinalIgnoreCase));
+        Application.Run(new InstallerForm(requestedAction, removeSettings));
+        return 0;
+    }
+}
+
+sealed class InstallerForm : Form
+{
+    const string AppName = "Victoria 3 Mod Launcher";
+    const string AppFolderName = "Vic3ModLauncher";
+    const string AppExeName = "vic3_mod_launcher.exe";
+    const string SetupExeName = "Vic3ModLauncher-Setup.exe";
+    const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Vic3ModLauncher";
+
+    readonly string requestedAction;
+    readonly Label statusLabel = new();
+    readonly CheckBox removeSettingsBox = new();
+    readonly Button installButton = new();
+    readonly Button reinstallButton = new();
+    readonly Button uninstallButton = new();
+    readonly Button closeButton = new();
+
+    public InstallerForm(string requestedAction, bool removeSettings)
+    {
+        this.requestedAction = requestedAction;
+
+        Text = AppName + " Setup";
+        Width = 520;
+        Height = 310;
+        MinimizeBox = false;
+        MaximizeBox = false;
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        StartPosition = FormStartPosition.CenterScreen;
+
+        var title = new Label
+        {
+            Text = AppName,
+            Left = 24,
+            Top = 20,
+            Width = 450,
+            Height = 28,
+            Font = new System.Drawing.Font(Font.FontFamily, 14, System.Drawing.FontStyle.Bold)
+        };
+
+        statusLabel.Left = 24;
+        statusLabel.Top = 58;
+        statusLabel.Width = 450;
+        statusLabel.Height = 54;
+
+        installButton.Text = "Install";
+        installButton.Left = 24;
+        installButton.Top = 126;
+        installButton.Width = 140;
+        installButton.Height = 38;
+        installButton.Click += (_, _) => RunAction("install", false);
+
+        reinstallButton.Text = "Reinstall / Update";
+        reinstallButton.Left = 180;
+        reinstallButton.Top = 126;
+        reinstallButton.Width = 140;
+        reinstallButton.Height = 38;
+        reinstallButton.Click += (_, _) => RunAction("reinstall", false);
+
+        uninstallButton.Text = "Uninstall";
+        uninstallButton.Left = 336;
+        uninstallButton.Top = 126;
+        uninstallButton.Width = 140;
+        uninstallButton.Height = 38;
+        uninstallButton.Click += (_, _) => RunAction("uninstall", removeSettingsBox.Checked);
+
+        removeSettingsBox.Text = "Remove launcher settings and saved playsets";
+        removeSettingsBox.Left = 24;
+        removeSettingsBox.Top = 182;
+        removeSettingsBox.Width = 360;
+        removeSettingsBox.Height = 24;
+        removeSettingsBox.Checked = removeSettings;
+
+        closeButton.Text = "Close";
+        closeButton.Left = 336;
+        closeButton.Top = 222;
+        closeButton.Width = 140;
+        closeButton.Height = 34;
+        closeButton.Click += (_, _) => Close();
+
+        Controls.AddRange(new Control[] {
+            title,
+            statusLabel,
+            installButton,
+            reinstallButton,
+            uninstallButton,
+            removeSettingsBox,
+            closeButton
+        });
+
+        RefreshStatus();
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        if (requestedAction is "--install" or "install") RunAction("install", false);
+        if (requestedAction is "--reinstall" or "reinstall") RunAction("reinstall", removeSettingsBox.Checked);
+        if (requestedAction is "--uninstall" or "uninstall") RunAction("uninstall", removeSettingsBox.Checked);
+    }
+
+    void RefreshStatus()
+    {
+        var installed = File.Exists(AppExePath);
+        statusLabel.Text = installed
+            ? "Installed at:\r\n" + InstallDir
+            : "Not installed yet.\r\nTarget folder: " + InstallDir;
+        installButton.Enabled = !installed;
+        reinstallButton.Enabled = installed;
+        uninstallButton.Enabled = installed;
+    }
+
+    void RunAction(string action, bool removeSettings)
     {
         try
         {
-            var installDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Vic3ModLauncher");
-            Directory.CreateDirectory(installDir);
-
-            var tempZip = Path.Combine(Path.GetTempPath(), "Vic3ModLauncher-portable.zip");
-            using (var source = Assembly.GetExecutingAssembly().GetManifestResourceStream("payload.zip"))
+            SetBusy(true);
+            if ((action == "reinstall" || action == "uninstall") && RunningFromInstallDir)
             {
-                if (source == null) throw new InvalidOperationException("Installer payload is missing.");
-                using var target = File.Create(tempZip);
-                source.CopyTo(target);
+                RelaunchFromTemp(action, removeSettings);
+                Close();
+                return;
             }
 
-            ZipFile.ExtractToDirectory(tempZip, installDir, true);
-
-            var exePath = Path.Combine(installDir, "vic3_mod_launcher.exe");
-            var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-            var shortcutPath = Path.Combine(desktop, "Victoria 3 Mod Launcher.lnk");
-            var ps = "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($env:VIC3_SHORTCUT);" +
-                     "$s.TargetPath=$env:VIC3_EXE;$s.WorkingDirectory=$env:VIC3_DIR;" +
-                     "$s.IconLocation=$env:VIC3_EXE;$s.Save()";
-            var startInfo = new ProcessStartInfo
+            switch (action)
             {
-                FileName = "powershell",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            startInfo.ArgumentList.Add("-NoProfile");
-            startInfo.ArgumentList.Add("-ExecutionPolicy");
-            startInfo.ArgumentList.Add("Bypass");
-            startInfo.ArgumentList.Add("-Command");
-            startInfo.ArgumentList.Add(ps);
-            startInfo.Environment["VIC3_SHORTCUT"] = shortcutPath;
-            startInfo.Environment["VIC3_EXE"] = exePath;
-            startInfo.Environment["VIC3_DIR"] = installDir;
-            using var process = Process.Start(startInfo);
-            process?.WaitForExit();
-
-            MessageBox.Show(
-                "Victoria 3 Mod Launcher installed.",
-                "Victoria 3 Mod Launcher",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            return 0;
+                case "install":
+                    Install(cleanFirst: false);
+                    MessageBox.Show("Installed successfully.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case "reinstall":
+                    Install(cleanFirst: true);
+                    MessageBox.Show("Reinstalled successfully.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case "uninstall":
+                    if (MessageBox.Show(
+                            "Uninstall " + AppName + "?",
+                            AppName,
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question) != DialogResult.Yes)
+                    {
+                        return;
+                    }
+                    Uninstall(removeSettings);
+                    MessageBox.Show("Uninstalled successfully.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+            }
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.ToString(), "Install failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return 1;
+            MessageBox.Show(ex.ToString(), "Setup failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            SetBusy(false);
+            RefreshStatus();
+        }
+    }
+
+    void Install(bool cleanFirst)
+    {
+        StopRunningLauncher();
+        if (cleanFirst && Directory.Exists(InstallDir)) DeleteDirectory(InstallDir);
+        Directory.CreateDirectory(InstallDir);
+
+        var tempZip = Path.Combine(Path.GetTempPath(), "Vic3ModLauncher-portable.zip");
+        using (var source = Assembly.GetExecutingAssembly().GetManifestResourceStream("payload.zip"))
+        {
+            if (source == null) throw new InvalidOperationException("Installer payload is missing.");
+            using var target = File.Create(tempZip);
+            source.CopyTo(target);
+        }
+
+        ZipFile.ExtractToDirectory(tempZip, InstallDir, true);
+        CopySetupIntoInstallDir();
+        CreateShortcut(AppShortcutPath, AppExePath, InstallDir, AppExePath);
+        CreateShortcut(UninstallShortcutPath, InstalledSetupPath, InstallDir, InstalledSetupPath, "--uninstall");
+        RegisterUninstallEntry();
+    }
+
+    void Uninstall(bool removeSettings)
+    {
+        StopRunningLauncher();
+        DeleteFile(AppShortcutPath);
+        DeleteFile(UninstallShortcutPath);
+        Registry.CurrentUser.DeleteSubKeyTree(RegistryPath, throwOnMissingSubKey: false);
+        if (Directory.Exists(InstallDir)) DeleteDirectory(InstallDir);
+        if (removeSettings && Directory.Exists(ConfigDir)) DeleteDirectory(ConfigDir);
+    }
+
+    void StopRunningLauncher()
+    {
+        foreach (var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(AppExeName)))
+        {
+            try
+            {
+                process.CloseMainWindow();
+                if (!process.WaitForExit(3000)) process.Kill(true);
+            }
+            catch
+            {
+                // The installer continues; file operations below will report a useful error if needed.
+            }
+        }
+    }
+
+    void CopySetupIntoInstallDir()
+    {
+        var current = Application.ExecutablePath;
+        if (string.Equals(current, InstalledSetupPath, StringComparison.OrdinalIgnoreCase)) return;
+        File.Copy(current, InstalledSetupPath, overwrite: true);
+    }
+
+    void RegisterUninstallEntry()
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
+        if (key == null) return;
+        key.SetValue("DisplayName", AppName);
+        key.SetValue("DisplayVersion", "1.0.0");
+        key.SetValue("Publisher", "badaruddinl");
+        key.SetValue("InstallLocation", InstallDir);
+        key.SetValue("DisplayIcon", AppExePath);
+        key.SetValue("UninstallString", Quote(InstalledSetupPath) + " --uninstall");
+        key.SetValue("QuietUninstallString", Quote(InstalledSetupPath) + " --uninstall");
+        key.SetValue("NoModify", 1, RegistryValueKind.DWord);
+        key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+    }
+
+    void CreateShortcut(string shortcutPath, string targetPath, string workingDirectory, string iconPath, string arguments = "")
+    {
+        var ps = "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($env:VIC3_SHORTCUT);" +
+                 "$s.TargetPath=$env:VIC3_TARGET;$s.Arguments=$env:VIC3_ARGS;" +
+                 "$s.WorkingDirectory=$env:VIC3_DIR;$s.IconLocation=$env:VIC3_ICON;$s.Save()";
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "powershell",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-Command");
+        startInfo.ArgumentList.Add(ps);
+        startInfo.Environment["VIC3_SHORTCUT"] = shortcutPath;
+        startInfo.Environment["VIC3_TARGET"] = targetPath;
+        startInfo.Environment["VIC3_ARGS"] = arguments;
+        startInfo.Environment["VIC3_DIR"] = workingDirectory;
+        startInfo.Environment["VIC3_ICON"] = iconPath;
+        using var process = Process.Start(startInfo);
+        process?.WaitForExit();
+    }
+
+    void RelaunchFromTemp(string action, bool removeSettings)
+    {
+        var tempSetup = Path.Combine(Path.GetTempPath(), "Vic3ModLauncher-Setup-" + Guid.NewGuid().ToString("N") + ".exe");
+        File.Copy(Application.ExecutablePath, tempSetup, overwrite: true);
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = tempSetup,
+            UseShellExecute = true
+        };
+        startInfo.ArgumentList.Add("--" + action);
+        if (removeSettings) startInfo.ArgumentList.Add("--remove-settings");
+        Process.Start(startInfo);
+    }
+
+    void SetBusy(bool busy)
+    {
+        Cursor = busy ? Cursors.WaitCursor : Cursors.Default;
+        installButton.Enabled = !busy;
+        reinstallButton.Enabled = !busy;
+        uninstallButton.Enabled = !busy;
+        closeButton.Enabled = !busy;
+        removeSettingsBox.Enabled = !busy;
+    }
+
+    static void DeleteDirectory(string path)
+    {
+        foreach (var item in Directory.EnumerateFileSystemEntries(path, "*", SearchOption.AllDirectories))
+        {
+            try { File.SetAttributes(item, FileAttributes.Normal); } catch { }
+        }
+        Directory.Delete(path, recursive: true);
+    }
+
+    static void DeleteFile(string path)
+    {
+        if (File.Exists(path)) File.Delete(path);
+    }
+
+    static string Quote(string value)
+    {
+        return "\"" + value + "\"";
+    }
+
+    string InstallDir => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        AppFolderName);
+
+    string ConfigDir => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        AppFolderName);
+
+    string DesktopDir => Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+
+    string AppExePath => Path.Combine(InstallDir, AppExeName);
+    string InstalledSetupPath => Path.Combine(InstallDir, SetupExeName);
+    string AppShortcutPath => Path.Combine(DesktopDir, AppName + ".lnk");
+    string UninstallShortcutPath => Path.Combine(DesktopDir, "Uninstall " + AppName + ".lnk");
+
+    bool RunningFromInstallDir
+    {
+        get
+        {
+            var current = Path.GetFullPath(Application.ExecutablePath);
+            var install = Path.GetFullPath(InstallDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            return current.StartsWith(install, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

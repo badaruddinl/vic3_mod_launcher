@@ -85,3 +85,19 @@ Output:
 ```text
 dist\Vic3ModLauncher-Setup.exe
 ```
+
+Installer ini punya opsi:
+
+- `Install`: install ke `%LOCALAPPDATA%\Vic3ModLauncher`.
+- `Reinstall / Update`: hapus app lama lalu extract build baru.
+- `Uninstall`: hapus app, shortcut Desktop, dan entry uninstall Windows.
+- `Remove launcher settings and saved playsets`: opsi tambahan saat uninstall untuk menghapus `%APPDATA%\Vic3ModLauncher`.
+
+Installer juga membuat:
+
+```text
+Desktop\Victoria 3 Mod Launcher.lnk
+Desktop\Uninstall Victoria 3 Mod Launcher.lnk
+```
+
+Entry uninstall juga didaftarkan ke Windows untuk user saat ini, jadi bisa muncul di daftar installed apps Windows.
