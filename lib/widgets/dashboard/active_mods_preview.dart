@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models.dart';
 import '../victoria_ui.dart';
+import 'active_mod_tile.dart';
 
 class ActiveModsPreview extends StatelessWidget {
   const ActiveModsPreview({
@@ -64,62 +65,6 @@ class ActiveModsPreview extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class ActiveModTile extends StatelessWidget {
-  const ActiveModTile({super.key, required this.mod, required this.validation});
-
-  final ModInfo mod;
-  final ModValidation? validation;
-
-  @override
-  Widget build(BuildContext context) {
-    final ok =
-        validation?.health == ModHealth.ok ||
-        mod.compatible == VersionStatus.ok;
-    return Row(
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xff102524),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: VicColors.goldDark),
-            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
-          ),
-          child: SizedBox(
-            width: 62,
-            height: 62,
-            child: Icon(
-              mod.source == 'external'
-                  ? Icons.public_outlined
-                  : Icons.factory_outlined,
-              color: VicColors.gold,
-              size: 30,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            mod.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: VicColors.parchment,
-              fontSize: 16,
-              height: 1.15,
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Icon(
-          ok ? Icons.check_circle_outline : Icons.error_outline,
-          color: ok ? VicColors.tealBright : VicColors.danger,
-          size: 22,
-        ),
-      ],
     );
   }
 }

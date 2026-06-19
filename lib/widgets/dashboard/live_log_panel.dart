@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../victoria_ui.dart';
+import 'log_entry_row.dart';
 
 class LiveLogPanel extends StatelessWidget {
   const LiveLogPanel({super.key, required this.logs});
@@ -16,41 +17,13 @@ class LiveLogPanel extends StatelessWidget {
         style: const TextStyle(color: VicColors.muted),
       ),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: ListView.builder(
-        itemCount: logs.take(6).length,
-        itemBuilder: (context, index) {
-          final log = logs[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Icon(
-                    Icons.circle,
-                    size: 7,
-                    color: VicColors.tealBright,
-                  ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Text(
-                    log,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: VicColors.parchment,
-                      fontFamily: 'Consolas',
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
+      child: logs.isEmpty
+          ? const EmptyLogState()
+          : ListView.builder(
+              itemCount: logs.take(6).length,
+              itemBuilder: (context, index) =>
+                  LogEntryRow(message: logs[index]),
             ),
-          );
-        },
-      ),
     );
   }
 }
