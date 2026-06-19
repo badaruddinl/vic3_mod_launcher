@@ -145,6 +145,7 @@ sealed class InstallerForm : Form
     string action = "install";
     string installDir = "";
     bool installFound;
+    bool completed;
 
     public InstallerForm(SetupOptions options)
     {
@@ -453,11 +454,11 @@ sealed class InstallerForm : Form
             {
                 case "install":
                     Install(targetDir, cleanFirst: false, options.CreateDesktopShortcut);
-                    ShowFinished("Installed successfully.", targetDir);
+                    Complete("Installed successfully.", targetDir);
                     break;
                 case "reinstall":
                     Install(targetDir, cleanFirst: true, options.CreateDesktopShortcut);
-                    ShowFinished("Reinstalled successfully.", targetDir);
+                    Complete("Reinstalled successfully.", targetDir);
                     break;
                 case "uninstall":
                     if (MessageBox.Show(
@@ -469,7 +470,7 @@ sealed class InstallerForm : Form
                         return;
                     }
                     Uninstall(targetDir, options.RemoveSettings);
-                    ShowFinished("Uninstalled successfully.", targetDir);
+                    Complete("Uninstalled successfully.", targetDir);
                     break;
             }
         }
@@ -481,6 +482,18 @@ sealed class InstallerForm : Form
         {
             SetBusy(false);
         }
+    }
+
+    void Complete(string message, string targetDir)
+    {
+        completed = true;
+        if (options.AutoRun)
+        {
+            Close();
+            return;
+        }
+
+        ShowFinished(message, targetDir);
     }
 
     void ShowFinished(string message, string targetDir)
@@ -681,6 +694,13 @@ sealed class InstallerForm : Form
     void SetBusy(bool busy)
     {
         Cursor = busy ? Cursors.WaitCursor : Cursors.Default;
+        if (completed)
+        {
+            backButton.Enabled = false;
+            nextButton.Enabled = false;
+            cancelButton.Enabled = true;
+            return;
+        }
         backButton.Enabled = !busy && step > 0;
         nextButton.Enabled = !busy;
         cancelButton.Enabled = !busy;
