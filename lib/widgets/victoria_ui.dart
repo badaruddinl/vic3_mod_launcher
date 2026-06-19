@@ -69,9 +69,9 @@ class VictoriaShell extends StatelessWidget {
               ),
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 980),
+                    constraints: const BoxConstraints(maxWidth: 780),
                     child: VictoriaFrame(child: child),
                   ),
                 ),
@@ -97,7 +97,7 @@ class VictoriaTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 58,
+      height: 50,
       child: Stack(
         children: [
           const Positioned.fill(child: DragToMoveArea(child: SizedBox())),
@@ -122,7 +122,7 @@ class VictoriaWindowButtons extends StatelessWidget {
           icon: Icons.remove,
           onPressed: () => windowManager.minimize(),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         _WindowButton(
           tooltip: 'Close',
           icon: Icons.close,
@@ -154,9 +154,9 @@ class _WindowButton extends StatelessWidget {
           onTap: onPressed,
           radius: 22,
           child: SizedBox(
-            width: 36,
-            height: 36,
-            child: Icon(icon, color: VicColors.gold, size: 25),
+            width: 34,
+            height: 34,
+            child: Icon(icon, color: VicColors.gold, size: 24),
           ),
         ),
       ),
@@ -206,8 +206,8 @@ class VictoriaHeaderMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = compact ? 72.0 : 86.0;
-    final titleSize = compact ? 33.0 : 38.0;
+    final iconSize = compact ? 58.0 : 70.0;
+    final titleSize = compact ? 29.0 : 34.0;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -216,12 +216,12 @@ class VictoriaHeaderMark extends StatelessWidget {
           width: iconSize,
           child: Image.asset('assets/brand/app_icon_256.png'),
         ),
-        SizedBox(height: compact ? 4 : 8),
+        SizedBox(height: compact ? 3 : 5),
         Text(
           'Victoria 3 Mod Launcher',
           style: vicTitle(context, size: titleSize),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0xff063f3b),
@@ -229,13 +229,13 @@ class VictoriaHeaderMark extends StatelessWidget {
             border: Border.all(color: VicColors.gold),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
             child: Text(
               gameVersion.isEmpty ? 'unknown' : 'v$gameVersion',
               style: const TextStyle(
                 color: VicColors.gold,
                 fontWeight: FontWeight.w700,
-                fontSize: 15,
+                fontSize: 14,
               ),
             ),
           ),
@@ -258,7 +258,7 @@ class VictoriaFrame extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: VicColors.goldDark, width: 1.2),
         boxShadow: const [
-          BoxShadow(color: Colors.black87, blurRadius: 24, spreadRadius: 3),
+          BoxShadow(color: Colors.black87, blurRadius: 22, spreadRadius: 2),
         ],
       ),
       child: Padding(
@@ -360,7 +360,7 @@ class GildedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = large ? 64.0 : 46.0;
+    final height = large ? 58.0 : 44.0;
     return SizedBox(
       height: height,
       child: DecoratedBox(
@@ -399,11 +399,11 @@ class GildedButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Georgia',
-                      fontSize: large ? 28 : 17,
+                      fontSize: large ? 25 : 16,
                       color: VicColors.parchment,
                       decoration: TextDecoration.none,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: large ? 5 : 0,
+                      letterSpacing: large ? 4.2 : 0,
                       shadows: const [
                         Shadow(
                           color: Colors.black87,
@@ -429,38 +429,82 @@ class VictoriaBackdropPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..isAntiAlias = true;
+    final rect = Offset.zero & size;
+
+    final topGlow = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0x442b2117), Colors.transparent],
+      ).createShader(rect);
+    canvas.drawRect(rect, topGlow);
+
     final haze = Paint()
       ..shader =
           RadialGradient(
             colors: [
-              const Color(0xffd7b06f).withValues(alpha: 0.18),
+              const Color(0xffd7b06f).withValues(alpha: 0.20),
               Colors.transparent,
             ],
           ).createShader(
             Rect.fromCircle(
-              center: Offset(size.width * 0.23, size.height * 0.28),
+              center: Offset(size.width * 0.26, size.height * 0.28),
               radius: size.shortestSide * 0.55,
             ),
           );
     canvas.drawRect(Offset.zero & size, haze);
 
-    paint.color = const Color(0xaa05090a);
-    final baseY = size.height * 0.72;
+    paint.color = const Color(0x88060a0b);
+    final skylineBase = size.height * 0.40;
+    final farBase = size.height * 0.47;
     final rng = math.Random(7);
-    for (var i = 0; i < 26; i++) {
-      final x = size.width * (i / 25);
-      final w = 12.0 + rng.nextDouble() * 30;
-      final h = size.height * (0.10 + rng.nextDouble() * 0.22);
-      canvas.drawRect(Rect.fromLTWH(x, baseY - h, w, h), paint);
+    for (var i = 0; i < 30; i++) {
+      final x = size.width * (i / 29);
+      final w = 10.0 + rng.nextDouble() * 26;
+      final h = size.height * (0.08 + rng.nextDouble() * 0.16);
+      canvas.drawRect(Rect.fromLTWH(x, farBase - h, w, h), paint);
       if (i % 4 == 0) {
         canvas.drawRect(
-          Rect.fromLTWH(x + w * 0.35, baseY - h - 55, 7, 55),
+          Rect.fromLTWH(x + w * 0.35, farBase - h - 42, 6, 42),
           paint,
         );
       }
-      if (i % 7 == 0) {
-        canvas.drawCircle(Offset(x + w * 0.7, baseY - h - 35), 18, paint);
-      }
+    }
+
+    paint.color = const Color(0xaa05090a);
+    for (var i = 0; i < 16; i++) {
+      final x = size.width * (0.48 + i * 0.035);
+      final w = 18.0 + rng.nextDouble() * 34;
+      final h = size.height * (0.12 + rng.nextDouble() * 0.23);
+      canvas.drawRect(Rect.fromLTWH(x, skylineBase - h, w, h), paint);
+    }
+
+    final domeCenter = Offset(size.width * 0.78, skylineBase - 96);
+    canvas.drawOval(
+      Rect.fromCenter(center: domeCenter, width: 118, height: 118),
+      paint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(domeCenter.dx - 58, domeCenter.dy, 116, 128),
+      paint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(domeCenter.dx - 7, domeCenter.dy - 72, 14, 78),
+      paint,
+    );
+
+    final smokePaint = Paint()
+      ..color = const Color(0x2ed9c09b)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
+    for (var i = 0; i < 7; i++) {
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(size.width * (0.10 + i * 0.075), 122 + i * 7),
+          width: 80 + i * 8,
+          height: 34 + i * 4,
+        ),
+        smokePaint,
+      );
     }
 
     final mapPaint = Paint()
@@ -483,6 +527,13 @@ class VictoriaBackdropPainter extends CustomPainter {
         mapPaint,
       );
     }
+
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.transparent, const Color(0xdd020707)],
+        stops: const [0.56, 1],
+      ).createShader(rect);
+    canvas.drawRect(rect, vignette);
   }
 
   @override
