@@ -77,6 +77,16 @@ function Remove-ExistingInstaller {
   }
 }
 
+function Write-Utf8NoBom {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Content
+  )
+
+  $encoding = [System.Text.UTF8Encoding]::new($false)
+  [System.IO.File]::WriteAllText($Path, $Content, $encoding)
+}
+
 $iscc = Find-InnoCompiler
 $version = Get-AppVersion
 
@@ -120,7 +130,7 @@ $manifest = [ordered]@{
   publishedAt = (Get-Date).ToUniversalTime().ToString("o")
   notes = "See the GitHub release notes for changes."
 }
-$manifest | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+Write-Utf8NoBom -Path $manifestPath -Content ($manifest | ConvertTo-Json)
 
 $localTestManifest = [ordered]@{
   version = $version.Display
@@ -130,7 +140,7 @@ $localTestManifest = [ordered]@{
   publishedAt = (Get-Date).ToUniversalTime().ToString("o")
   notes = "Local update-flow test manifest. It points to the installer built on this machine."
 }
-$localTestManifest | ConvertTo-Json | Set-Content -LiteralPath $localTestManifestPath -Encoding UTF8
+Write-Utf8NoBom -Path $localTestManifestPath -Content ($localTestManifest | ConvertTo-Json)
 
 Write-Host "Installer: $installerPath"
 Write-Host "Update manifest: $manifestPath"
