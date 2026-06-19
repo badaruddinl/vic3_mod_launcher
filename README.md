@@ -112,6 +112,26 @@ Uninstaller bawaan Inno disimpan di folder install sebagai `unins000.exe` dan di
 
 File runtime pendukung Flutter Windows seperti `flutter_windows.dll` dan folder `data\flutter_assets` tetap dibutuhkan agar app berjalan. Installer memberi atribut hidden pada file/folder pendukung tersebut, sehingga folder install normalnya hanya menampilkan launcher dan uninstaller di Explorer default.
 
+## Logs
+
+Launcher menulis log ke:
+
+```text
+%APPDATA%\Vic3ModLauncher\logs\launcher.log
+```
+
+Log tidak ditulis ke `C:\Program Files\Victoria 3 Mod Launcher` karena folder install biasanya butuh izin administrator untuk write. File `launcher.log` otomatis di-rotate setelah 1 MB dan menyimpan 5 file rotasi:
+
+```text
+launcher.log
+launcher.log.1
+launcher.log.2
+...
+launcher.log.5
+```
+
+Di aplikasi, buka menu update kanan atas lalu pilih `Open Logs`.
+
 ## Update release
 
 App mengecek update dari manifest JSON. Default URL:

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../constants.dart';
 import '../models.dart';
+import '../services/app_logger.dart';
 import '../services/diagnostic_service.dart';
 import '../services/descriptor_service.dart';
 import '../services/json_service.dart';
@@ -945,6 +946,7 @@ $process.Id
     final stamp = DateTime.now().toIso8601String().substring(11, 19);
     logs.insert(0, '[$stamp] $message');
     if (logs.length > 200) logs.removeRange(200, logs.length);
+    AppLogger.info(message);
     if (mounted) setState(() {});
   }
 
@@ -986,6 +988,7 @@ $process.Id
             onSelected: (value) {
               if (value == 'check') _checkForUpdates();
               if (value == 'source') _editUpdateSource();
+              if (value == 'logs') AppLogger.openDirectory();
             },
             itemBuilder: (context) => const [
               PopupMenuItem(
@@ -1000,6 +1003,13 @@ $process.Id
                 child: ListTile(
                   leading: Icon(Icons.link),
                   title: Text('Update Source'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'logs',
+                child: ListTile(
+                  leading: Icon(Icons.folder_open),
+                  title: Text('Open Logs'),
                 ),
               ),
             ],

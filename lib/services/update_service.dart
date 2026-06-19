@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
 import '../models.dart';
+import 'app_logger.dart';
 
 class UpdateService {
   const UpdateService();
@@ -19,6 +20,7 @@ class UpdateService {
   }
 
   Future<UpdateCheckResult> check(String manifestLocation) async {
+    AppLogger.info('Update check started. Manifest: $manifestLocation');
     final current = await currentVersion();
     final manifest = await _readText(manifestLocation);
     final data = jsonDecode(manifest) as Map<String, dynamic>;
@@ -35,7 +37,7 @@ class UpdateService {
         'Update manifest must contain version and installerUrl.',
       );
     }
-    return UpdateCheckResult(
+    final result = UpdateCheckResult(
       current: current,
       latest: latest,
       updateAvailable:
@@ -47,6 +49,10 @@ class UpdateService {
           ) >
           0,
     );
+    AppLogger.info(
+      'Update check completed. Current: ${current.label}, latest: ${latest.label}, available: ${result.updateAvailable}',
+    );
+    return result;
   }
 
   Future<File> downloadInstaller(
@@ -57,6 +63,9 @@ class UpdateService {
     final target = File(p.join(tempDir.path, 'Vic3ModLauncher-Setup.exe'));
     final source = update.installerUrl.trim();
     final uri = Uri.tryParse(source);
+    AppLogger.info(
+      'Update download started. Version: ${update.label}, source: $source, target: ${target.path}',
+    );
 
     if (_isLocalFileLocation(source, uri)) {
       final sourceFile = File(_localFilePath(source, uri));
@@ -104,21 +113,34 @@ class UpdateService {
     }
 
     if (update.sha256.isNotEmpty) {
+      AppLogger.info('Verifying update installer SHA256.');
       final digest = await sha256.bind(target.openRead()).first;
       if (digest.toString().toLowerCase() != update.sha256) {
         throw Exception(
           'Downloaded installer SHA256 mismatch.\nExpected: ${update.sha256}\nActual: $digest',
         );
       }
+      AppLogger.info('Update installer SHA256 verified: $digest');
     }
 
+    AppLogger.info('Update download completed: ${target.path}');
     return target;
   }
 
   Future<void> launchInstaller(File installer) async {
+    const args = [
+      '/SP-',
+      '/VERYSILENT',
+      '/SUPPRESSMSGBOXES',
+      '/NORESTART',
+      '/CLOSEAPPLICATIONS',
+    ];
+    AppLogger.info(
+      'Launching update installer: ${installer.path} ${args.join(' ')}',
+    );
     await Process.start(
       installer.path,
-      const [],
+      args,
       runInShell: Platform.isWindows,
       mode: ProcessStartMode.detached,
     );

@@ -7,6 +7,19 @@ Format versi mengikuti SemVer: `MAJOR.MINOR.PATCH+BUILD`.
 - `PATCH`: bug fix atau perbaikan kecil.
 - `BUILD`: nomor build installer/app untuk update detection.
 
+## 1.0.3+4 - 2026-06-19
+
+### Added
+
+- Added persistent launcher logs in `%APPDATA%\Vic3ModLauncher\logs`.
+- Added log rotation for `launcher.log` after it reaches 1 MB, keeping 5 rotated files.
+- Added `Open Logs` from the update menu.
+
+### Changed
+
+- Update installer handoff now logs each step for tracing.
+- Update installer is launched with Inno Setup silent arguments so updates can continue after UAC without manual wizard steps.
+
 ## 1.0.2+3 - 2026-06-19
 
 ### Fixed
