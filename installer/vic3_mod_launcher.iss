@@ -56,12 +56,19 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
+[Dirs]
+Name: "{app}\data"; Attribs: hidden
+Name: "{app}\data\flutter_assets"; Attribs: hidden
+
 [InstallDelete]
 Type: files; Name: "{app}\Vic3ModLauncher-Setup.exe"
 Type: files; Name: "{app}\Vic3ModLauncher-Uninstall.exe"
 
 [Files]
-Source: "{#ReleaseDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace uninsrestartdelete
+Source: "{#ReleaseDir}\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion restartreplace uninsrestartdelete
+Source: "{#ReleaseDir}\*.dll"; DestDir: "{app}"; Flags: ignoreversion restartreplace uninsrestartdelete; Attribs: hidden
+Source: "{#ReleaseDir}\*.json"; DestDir: "{app}"; Flags: ignoreversion restartreplace uninsrestartdelete; Attribs: hidden
+Source: "{#ReleaseDir}\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace uninsrestartdelete; Attribs: hidden
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"

@@ -109,3 +109,5 @@ Start Menu\Victoria 3 Mod Launcher\Uninstall Victoria 3 Mod Launcher.lnk
 ```
 
 Uninstaller bawaan Inno disimpan di folder install sebagai `unins000.exe` dan didaftarkan ke Windows Installed Apps.
+
+File runtime pendukung Flutter Windows seperti `flutter_windows.dll` dan folder `data\flutter_assets` tetap dibutuhkan agar app berjalan. Installer memberi atribut hidden pada file/folder pendukung tersebut, sehingga folder install normalnya hanya menampilkan launcher dan uninstaller di Explorer default.
