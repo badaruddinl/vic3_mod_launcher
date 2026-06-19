@@ -527,12 +527,6 @@ sealed class InstallerForm : Form
     void Complete(string message, string targetDir)
     {
         completed = true;
-        if (options.AutoRun)
-        {
-            Close();
-            return;
-        }
-
         ShowFinished(message, targetDir);
     }
 
