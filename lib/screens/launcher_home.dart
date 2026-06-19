@@ -17,6 +17,9 @@ import '../services/mod_validation_service.dart';
 import '../services/path_service.dart';
 import '../services/playset_service.dart';
 import '../services/update_service.dart';
+import '../widgets/common/launcher_message_dialog.dart';
+import '../widgets/settings/save_playset_dialog.dart';
+import '../widgets/update/update_dialogs.dart';
 import '../widgets/update/update_menu.dart';
 import 'home_dashboard.dart';
 import 'settings_screen.dart';
@@ -365,30 +368,7 @@ class _LauncherHomeState extends State<LauncherHome> {
   }
 
   Future<void> _savePlaysetAs() async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Save Playset'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Playset name'),
-          onSubmitted: (value) => Navigator.of(context).pop(value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
+    final name = await showSavePlaysetDialog(context);
     if (name == null || name.trim().isEmpty) return;
     const contentLoad = ContentLoadService();
     const PlaysetService().save(
@@ -500,84 +480,22 @@ class _LauncherHomeState extends State<LauncherHome> {
   }
 
   Future<void> _showUpdateDialog(UpdateCheckResult result) async {
-    final install = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Update ${result.latest.label} tersedia'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: SelectableText(
-            [
-              'Current: ${result.current.label}',
-              'Latest: ${result.latest.label}',
-              if (result.latest.publishedAt != null)
-                'Published: ${result.latest.publishedAt!.toLocal()}',
-              '',
-              result.latest.notes.isEmpty
-                  ? 'Tidak ada release notes.'
-                  : result.latest.notes,
-            ].join('\n'),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Later'),
-          ),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context).pop(true),
-            icon: const Icon(Icons.download_outlined),
-            label: const Text('Download & Install'),
-          ),
-        ],
-      ),
-    );
+    final install = await showUpdateAvailableDialog(context, result);
     if (install == true) {
       await _downloadAndInstallUpdate(result.latest);
     }
   }
 
   Future<void> _downloadAndInstallUpdate(UpdateInfo update) async {
-    var received = 0;
-    int? total;
-    StateSetter? setDialogState;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          setDialogState = setState;
-          final progress = total == null || total == 0
-              ? null
-              : received / total!;
-          return AlertDialog(
-            title: Text('Downloading ${update.label}'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LinearProgressIndicator(value: progress),
-                const SizedBox(height: 12),
-                Text(
-                  total == null
-                      ? '${(received / 1024 / 1024).toStringAsFixed(1)} MB'
-                      : '${(received / 1024 / 1024).toStringAsFixed(1)} / ${(total! / 1024 / 1024).toStringAsFixed(1)} MB',
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+    final progressDialog = UpdateDownloadProgressDialog();
+    progressDialog.show(context, update);
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
     try {
       final installer = await const UpdateService().downloadInstaller(
         update,
         onProgress: (nextReceived, nextTotal) {
-          received = nextReceived;
-          total = nextTotal;
-          setDialogState?.call(() {});
+          progressDialog.update(nextReceived, nextTotal);
         },
       );
       if (mounted) Navigator.of(context).pop();
@@ -593,38 +511,10 @@ class _LauncherHomeState extends State<LauncherHome> {
   }
 
   Future<void> _editUpdateSource() async {
-    final controller = TextEditingController(text: config.updateManifestUrl);
-    final value = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Update Source'),
-        content: SizedBox(
-          width: 560,
-          child: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Manifest URL or local file path',
-              helperText:
-                  'Example: https://.../latest.json or D:\\path\\latest.json',
-            ),
-            maxLines: 2,
-            onSubmitted: (value) => Navigator.of(context).pop(value),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+    final value = await showUpdateSourceDialog(
+      context,
+      initialValue: config.updateManifestUrl,
     );
-    controller.dispose();
     if (value == null || value.trim().isEmpty) return;
     setState(() => config = config.copyWith(updateManifestUrl: value.trim()));
     await config.save();
@@ -649,19 +539,7 @@ class _LauncherHomeState extends State<LauncherHome> {
   }
 
   void _showMessage(String title, String body) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: SelectableText(body),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+    showLauncherMessageDialog(context, title: title, body: body);
   }
 
   @override
