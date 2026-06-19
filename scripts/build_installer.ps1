@@ -70,6 +70,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Principal;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -81,131 +82,344 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        var requestedAction = args.Length == 0 ? "" : args[0].ToLowerInvariant();
-        var removeSettings = Array.Exists(args, item => item.Equals("--remove-settings", StringComparison.OrdinalIgnoreCase));
-        Application.Run(new InstallerForm(requestedAction, removeSettings));
+        Application.Run(new InstallerForm(SetupOptions.Parse(args)));
         return 0;
+    }
+}
+
+sealed class SetupOptions
+{
+    public string Action { get; set; } = "";
+    public string InstallDir { get; set; } = "";
+    public bool RemoveSettings { get; set; }
+    public bool CreateDesktopShortcut { get; set; } = true;
+    public bool AutoRun { get; set; }
+
+    public static SetupOptions Parse(string[] args)
+    {
+        var options = new SetupOptions();
+        for (var i = 0; i < args.Length; i++)
+        {
+            var item = args[i].ToLowerInvariant();
+            if (item is "--install" or "install") options.Action = "install";
+            else if (item is "--reinstall" or "reinstall") options.Action = "reinstall";
+            else if (item is "--uninstall" or "uninstall") options.Action = "uninstall";
+            else if (item == "--dir" && i + 1 < args.Length) options.InstallDir = args[++i];
+            else if (item == "--remove-settings") options.RemoveSettings = true;
+            else if (item == "--no-desktop-shortcut") options.CreateDesktopShortcut = false;
+            else if (item == "--auto-run") options.AutoRun = true;
+        }
+        return options;
     }
 }
 
 sealed class InstallerForm : Form
 {
     const string AppName = "Victoria 3 Mod Launcher";
-    const string AppFolderName = "Vic3ModLauncher";
     const string AppExeName = "vic3_mod_launcher.exe";
     const string SetupExeName = "Vic3ModLauncher-Setup.exe";
     const string RegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Vic3ModLauncher";
 
-    readonly string requestedAction;
-    readonly Label statusLabel = new();
+    readonly SetupOptions options;
+    readonly Panel page = new();
+    readonly Label headerLabel = new();
+    readonly Label bodyLabel = new();
+    readonly Button backButton = new();
+    readonly Button nextButton = new();
+    readonly Button cancelButton = new();
+    readonly RadioButton installRadio = new();
+    readonly RadioButton reinstallRadio = new();
+    readonly RadioButton uninstallRadio = new();
+    readonly TextBox installDirBox = new();
+    readonly CheckBox desktopShortcutBox = new();
     readonly CheckBox removeSettingsBox = new();
-    readonly Button installButton = new();
-    readonly Button reinstallButton = new();
-    readonly Button uninstallButton = new();
-    readonly Button closeButton = new();
 
-    public InstallerForm(string requestedAction, bool removeSettings)
+    int step;
+    string action = "install";
+    string installDir = "";
+
+    public InstallerForm(SetupOptions options)
     {
-        this.requestedAction = requestedAction;
+        this.options = options;
+        installDir = string.IsNullOrWhiteSpace(options.InstallDir)
+            ? FindInstallDirOrDefault()
+            : options.InstallDir;
+        action = string.IsNullOrWhiteSpace(options.Action)
+            ? (File.Exists(Path.Combine(installDir, AppExeName)) ? "reinstall" : "install")
+            : options.Action;
 
         Text = AppName + " Setup";
-        Width = 520;
-        Height = 310;
+        Width = 680;
+        Height = 470;
         MinimizeBox = false;
         MaximizeBox = false;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterScreen;
 
-        var title = new Label
-        {
-            Text = AppName,
-            Left = 24,
-            Top = 20,
-            Width = 450,
-            Height = 28,
-            Font = new System.Drawing.Font(Font.FontFamily, 14, System.Drawing.FontStyle.Bold)
-        };
+        headerLabel.Left = 24;
+        headerLabel.Top = 20;
+        headerLabel.Width = 610;
+        headerLabel.Height = 28;
+        headerLabel.Font = new System.Drawing.Font(Font.FontFamily, 15, System.Drawing.FontStyle.Bold);
 
-        statusLabel.Left = 24;
-        statusLabel.Top = 58;
-        statusLabel.Width = 450;
-        statusLabel.Height = 54;
+        bodyLabel.Left = 24;
+        bodyLabel.Top = 58;
+        bodyLabel.Width = 610;
+        bodyLabel.Height = 44;
 
-        installButton.Text = "Install";
-        installButton.Left = 24;
-        installButton.Top = 126;
-        installButton.Width = 140;
-        installButton.Height = 38;
-        installButton.Click += (_, _) => RunAction("install", false);
+        page.Left = 24;
+        page.Top = 112;
+        page.Width = 610;
+        page.Height = 260;
 
-        reinstallButton.Text = "Reinstall / Update";
-        reinstallButton.Left = 180;
-        reinstallButton.Top = 126;
-        reinstallButton.Width = 140;
-        reinstallButton.Height = 38;
-        reinstallButton.Click += (_, _) => RunAction("reinstall", false);
+        backButton.Text = "Back";
+        backButton.Left = 292;
+        backButton.Top = 386;
+        backButton.Width = 100;
+        backButton.Height = 34;
+        backButton.Click += (_, _) => MoveBack();
 
-        uninstallButton.Text = "Uninstall";
-        uninstallButton.Left = 336;
-        uninstallButton.Top = 126;
-        uninstallButton.Width = 140;
-        uninstallButton.Height = 38;
-        uninstallButton.Click += (_, _) => RunAction("uninstall", removeSettingsBox.Checked);
+        nextButton.Text = "Next";
+        nextButton.Left = 404;
+        nextButton.Top = 386;
+        nextButton.Width = 100;
+        nextButton.Height = 34;
+        nextButton.Click += (_, _) => MoveNext();
 
-        removeSettingsBox.Text = "Remove launcher settings and saved playsets";
-        removeSettingsBox.Left = 24;
-        removeSettingsBox.Top = 182;
-        removeSettingsBox.Width = 360;
-        removeSettingsBox.Height = 24;
-        removeSettingsBox.Checked = removeSettings;
+        cancelButton.Text = "Cancel";
+        cancelButton.Left = 516;
+        cancelButton.Top = 386;
+        cancelButton.Width = 100;
+        cancelButton.Height = 34;
+        cancelButton.Click += (_, _) => Close();
 
-        closeButton.Text = "Close";
-        closeButton.Left = 336;
-        closeButton.Top = 222;
-        closeButton.Width = 140;
-        closeButton.Height = 34;
-        closeButton.Click += (_, _) => Close();
-
-        Controls.AddRange(new Control[] {
-            title,
-            statusLabel,
-            installButton,
-            reinstallButton,
-            uninstallButton,
-            removeSettingsBox,
-            closeButton
-        });
-
-        RefreshStatus();
+        Controls.AddRange(new Control[] { headerLabel, bodyLabel, page, backButton, nextButton, cancelButton });
+        Render();
     }
 
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
-        if (requestedAction is "--install" or "install") RunAction("install", false);
-        if (requestedAction is "--reinstall" or "reinstall") RunAction("reinstall", removeSettingsBox.Checked);
-        if (requestedAction is "--uninstall" or "uninstall") RunAction("uninstall", removeSettingsBox.Checked);
+        if (options.AutoRun && !string.IsNullOrWhiteSpace(options.Action))
+        {
+            BeginInvoke(new Action(() => ExecuteAction()));
+        }
     }
 
-    void RefreshStatus()
+    void Render()
     {
-        var installed = File.Exists(AppExePath);
-        statusLabel.Text = installed
-            ? "Installed at:\r\n" + InstallDir
-            : "Not installed yet.\r\nTarget folder: " + InstallDir;
-        installButton.Enabled = !installed;
-        reinstallButton.Enabled = installed;
-        uninstallButton.Enabled = installed;
+        page.Controls.Clear();
+        backButton.Enabled = step > 0;
+        cancelButton.Text = "Cancel";
+
+        if (step == 0)
+        {
+            RenderWelcome();
+        }
+        else if (step == 1 && action != "uninstall")
+        {
+            RenderInstallFolder();
+        }
+        else
+        {
+            RenderReady();
+        }
     }
 
-    void RunAction(string action, bool removeSettings)
+    void RenderWelcome()
+    {
+        headerLabel.Text = "Welcome to " + AppName + " Setup";
+        bodyLabel.Text = "Setup will install, update, or remove the launcher from this computer.";
+        nextButton.Text = "Next";
+
+        var installedDir = FindInstalledDir();
+        var installedText = string.IsNullOrWhiteSpace(installedDir)
+            ? "No existing installation was found."
+            : "Existing installation:\r\n" + installedDir;
+
+        var status = new Label
+        {
+            Text = installedText,
+            Left = 4,
+            Top = 0,
+            Width = 580,
+            Height = 48
+        };
+
+        installRadio.Text = "Install";
+        installRadio.Left = 4;
+        installRadio.Top = 70;
+        installRadio.Width = 240;
+        installRadio.Checked = action == "install";
+        installRadio.CheckedChanged += (_, _) => { if (installRadio.Checked) action = "install"; };
+
+        reinstallRadio.Text = "Reinstall / Update";
+        reinstallRadio.Left = 4;
+        reinstallRadio.Top = 104;
+        reinstallRadio.Width = 240;
+        reinstallRadio.Checked = action == "reinstall";
+        reinstallRadio.CheckedChanged += (_, _) => { if (reinstallRadio.Checked) action = "reinstall"; };
+
+        uninstallRadio.Text = "Uninstall";
+        uninstallRadio.Left = 4;
+        uninstallRadio.Top = 138;
+        uninstallRadio.Width = 240;
+        uninstallRadio.Checked = action == "uninstall";
+        uninstallRadio.Enabled = !string.IsNullOrWhiteSpace(installedDir) || Directory.Exists(installDir);
+        uninstallRadio.CheckedChanged += (_, _) => { if (uninstallRadio.Checked) action = "uninstall"; };
+
+        page.Controls.AddRange(new Control[] { status, installRadio, reinstallRadio, uninstallRadio });
+    }
+
+    void RenderInstallFolder()
+    {
+        headerLabel.Text = action == "install" ? "Choose Install Location" : "Choose Update Location";
+        bodyLabel.Text = "Setup will install the launcher into this folder. The default is Program Files.";
+        nextButton.Text = "Next";
+
+        var folderLabel = new Label
+        {
+            Text = "Destination folder:",
+            Left = 4,
+            Top = 10,
+            Width = 180,
+            Height = 24
+        };
+
+        installDirBox.Left = 4;
+        installDirBox.Top = 40;
+        installDirBox.Width = 500;
+        installDirBox.Height = 24;
+        installDirBox.Text = installDir;
+        installDirBox.TextChanged += (_, _) => installDir = installDirBox.Text.Trim();
+
+        var browseButton = new Button
+        {
+            Text = "Browse...",
+            Left = 514,
+            Top = 38,
+            Width = 92,
+            Height = 28
+        };
+        browseButton.Click += (_, _) =>
+        {
+            using var dialog = new FolderBrowserDialog();
+            dialog.Description = "Choose install folder";
+            dialog.SelectedPath = Directory.Exists(installDir) ? installDir : DefaultInstallDir();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                installDirBox.Text = dialog.SelectedPath;
+            }
+        };
+
+        desktopShortcutBox.Text = "Create Desktop shortcut";
+        desktopShortcutBox.Left = 4;
+        desktopShortcutBox.Top = 88;
+        desktopShortcutBox.Width = 260;
+        desktopShortcutBox.Height = 24;
+        desktopShortcutBox.Checked = options.CreateDesktopShortcut;
+        desktopShortcutBox.CheckedChanged += (_, _) => options.CreateDesktopShortcut = desktopShortcutBox.Checked;
+
+        var note = new Label
+        {
+            Text = "If this folder is inside Program Files, Windows will ask for administrator permission.",
+            Left = 4,
+            Top = 132,
+            Width = 580,
+            Height = 42
+        };
+
+        page.Controls.AddRange(new Control[] { folderLabel, installDirBox, browseButton, desktopShortcutBox, note });
+    }
+
+    void RenderReady()
+    {
+        var isUninstall = action == "uninstall";
+        headerLabel.Text = isUninstall ? "Ready to Uninstall" : "Ready to Install";
+        bodyLabel.Text = isUninstall
+            ? "Setup is ready to remove the launcher."
+            : "Setup is ready to copy files and create shortcuts.";
+        nextButton.Text = isUninstall ? "Uninstall" : (action == "reinstall" ? "Reinstall" : "Install");
+
+        var target = isUninstall ? FindInstalledDirOrCurrent() : installDir;
+        var summary = new Label
+        {
+            Text = (isUninstall ? "Remove from:" : "Install to:") + "\r\n" + target,
+            Left = 4,
+            Top = 0,
+            Width = 580,
+            Height = 64
+        };
+
+        page.Controls.Add(summary);
+
+        if (isUninstall)
+        {
+            removeSettingsBox.Text = "Remove launcher settings and saved playsets";
+            removeSettingsBox.Left = 4;
+            removeSettingsBox.Top = 82;
+            removeSettingsBox.Width = 360;
+            removeSettingsBox.Height = 24;
+            removeSettingsBox.Checked = options.RemoveSettings;
+            removeSettingsBox.CheckedChanged += (_, _) => options.RemoveSettings = removeSettingsBox.Checked;
+            page.Controls.Add(removeSettingsBox);
+        }
+    }
+
+    void MoveNext()
+    {
+        if (step == 0)
+        {
+            if (action == "uninstall")
+            {
+                step = 2;
+            }
+            else
+            {
+                step = 1;
+            }
+            Render();
+            return;
+        }
+
+        if (step == 1)
+        {
+            if (string.IsNullOrWhiteSpace(installDir))
+            {
+                MessageBox.Show("Choose an install folder first.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            step = 2;
+            Render();
+            return;
+        }
+
+        ExecuteAction();
+    }
+
+    void MoveBack()
+    {
+        if (step == 2 && action == "uninstall") step = 0;
+        else step = Math.Max(0, step - 1);
+        Render();
+    }
+
+    void ExecuteAction()
     {
         try
         {
             SetBusy(true);
-            if ((action == "reinstall" || action == "uninstall") && RunningFromInstallDir)
+
+            var targetDir = action == "uninstall" ? FindInstalledDirOrCurrent() : installDir;
+            if (string.IsNullOrWhiteSpace(targetDir))
             {
-                RelaunchFromTemp(action, removeSettings);
+                MessageBox.Show("No installation folder was found.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (ShouldRelaunch(action, targetDir))
+            {
+                Relaunch(action, targetDir, options.RemoveSettings, options.CreateDesktopShortcut);
                 Close();
                 return;
             }
@@ -213,12 +427,12 @@ sealed class InstallerForm : Form
             switch (action)
             {
                 case "install":
-                    Install(cleanFirst: false);
-                    MessageBox.Show("Installed successfully.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Install(targetDir, cleanFirst: false, options.CreateDesktopShortcut);
+                    ShowFinished("Installed successfully.", targetDir);
                     break;
                 case "reinstall":
-                    Install(cleanFirst: true);
-                    MessageBox.Show("Reinstalled successfully.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Install(targetDir, cleanFirst: true, options.CreateDesktopShortcut);
+                    ShowFinished("Reinstalled successfully.", targetDir);
                     break;
                 case "uninstall":
                     if (MessageBox.Show(
@@ -229,8 +443,8 @@ sealed class InstallerForm : Form
                     {
                         return;
                     }
-                    Uninstall(removeSettings);
-                    MessageBox.Show("Uninstalled successfully.", AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Uninstall(targetDir, options.RemoveSettings);
+                    ShowFinished("Uninstalled successfully.", targetDir);
                     break;
             }
         }
@@ -241,15 +455,53 @@ sealed class InstallerForm : Form
         finally
         {
             SetBusy(false);
-            RefreshStatus();
         }
     }
 
-    void Install(bool cleanFirst)
+    void ShowFinished(string message, string targetDir)
+    {
+        page.Controls.Clear();
+        headerLabel.Text = "Setup Complete";
+        bodyLabel.Text = message;
+        backButton.Enabled = false;
+        nextButton.Enabled = false;
+        cancelButton.Text = "Close";
+
+        var label = new Label
+        {
+            Text = "Location:\r\n" + targetDir,
+            Left = 4,
+            Top = 0,
+            Width = 580,
+            Height = 64
+        };
+        page.Controls.Add(label);
+
+        if (action != "uninstall" && File.Exists(Path.Combine(targetDir, AppExeName)))
+        {
+            var launchButton = new Button
+            {
+                Text = "Launch",
+                Left = 4,
+                Top = 84,
+                Width = 120,
+                Height = 34
+            };
+            launchButton.Click += (_, _) => Process.Start(new ProcessStartInfo
+            {
+                FileName = Path.Combine(targetDir, AppExeName),
+                WorkingDirectory = targetDir,
+                UseShellExecute = true
+            });
+            page.Controls.Add(launchButton);
+        }
+    }
+
+    void Install(string targetDir, bool cleanFirst, bool createDesktopShortcut)
     {
         StopRunningLauncher();
-        if (cleanFirst && Directory.Exists(InstallDir)) DeleteDirectory(InstallDir);
-        Directory.CreateDirectory(InstallDir);
+        if (cleanFirst && Directory.Exists(targetDir)) DeleteDirectory(targetDir);
+        Directory.CreateDirectory(targetDir);
 
         var tempZip = Path.Combine(Path.GetTempPath(), "Vic3ModLauncher-portable.zip");
         using (var source = Assembly.GetExecutingAssembly().GetManifestResourceStream("payload.zip"))
@@ -259,20 +511,20 @@ sealed class InstallerForm : Form
             source.CopyTo(target);
         }
 
-        ZipFile.ExtractToDirectory(tempZip, InstallDir, true);
-        CopySetupIntoInstallDir();
-        CreateShortcut(AppShortcutPath, AppExePath, InstallDir, AppExePath);
-        CreateShortcut(UninstallShortcutPath, InstalledSetupPath, InstallDir, InstalledSetupPath, "--uninstall");
-        RegisterUninstallEntry();
+        ZipFile.ExtractToDirectory(tempZip, targetDir, true);
+        CopySetupIntoInstallDir(targetDir);
+        if (createDesktopShortcut) CreateShortcut(DesktopShortcutPath, AppExePath(targetDir), targetDir, AppExePath(targetDir));
+        CreateStartMenuShortcuts(targetDir);
+        RegisterUninstallEntry(targetDir);
     }
 
-    void Uninstall(bool removeSettings)
+    void Uninstall(string targetDir, bool removeSettings)
     {
         StopRunningLauncher();
-        DeleteFile(AppShortcutPath);
-        DeleteFile(UninstallShortcutPath);
-        Registry.CurrentUser.DeleteSubKeyTree(RegistryPath, throwOnMissingSubKey: false);
-        if (Directory.Exists(InstallDir)) DeleteDirectory(InstallDir);
+        DeleteFile(DesktopShortcutPath);
+        DeleteStartMenuShortcuts();
+        DeleteRegistryEntries();
+        if (Directory.Exists(targetDir)) DeleteDirectory(targetDir);
         if (removeSettings && Directory.Exists(ConfigDir)) DeleteDirectory(ConfigDir);
     }
 
@@ -292,26 +544,53 @@ sealed class InstallerForm : Form
         }
     }
 
-    void CopySetupIntoInstallDir()
+    void CopySetupIntoInstallDir(string targetDir)
     {
         var current = Application.ExecutablePath;
-        if (string.Equals(current, InstalledSetupPath, StringComparison.OrdinalIgnoreCase)) return;
-        File.Copy(current, InstalledSetupPath, overwrite: true);
+        var installedSetup = InstalledSetupPath(targetDir);
+        if (string.Equals(current, installedSetup, StringComparison.OrdinalIgnoreCase)) return;
+        File.Copy(current, installedSetup, overwrite: true);
     }
 
-    void RegisterUninstallEntry()
+    void RegisterUninstallEntry(string targetDir)
     {
-        using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
+        using var key = (IsAdministrator() ? Registry.LocalMachine : Registry.CurrentUser).CreateSubKey(RegistryPath);
         if (key == null) return;
         key.SetValue("DisplayName", AppName);
         key.SetValue("DisplayVersion", "1.0.0");
         key.SetValue("Publisher", "badaruddinl");
-        key.SetValue("InstallLocation", InstallDir);
-        key.SetValue("DisplayIcon", AppExePath);
-        key.SetValue("UninstallString", Quote(InstalledSetupPath) + " --uninstall");
-        key.SetValue("QuietUninstallString", Quote(InstalledSetupPath) + " --uninstall");
+        key.SetValue("InstallLocation", targetDir);
+        key.SetValue("DisplayIcon", AppExePath(targetDir));
+        key.SetValue("UninstallString", Quote(InstalledSetupPath(targetDir)) + " --uninstall --dir " + Quote(targetDir));
+        key.SetValue("QuietUninstallString", Quote(InstalledSetupPath(targetDir)) + " --uninstall --dir " + Quote(targetDir));
         key.SetValue("NoModify", 1, RegistryValueKind.DWord);
         key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+    }
+
+    void DeleteRegistryEntries()
+    {
+        Registry.CurrentUser.DeleteSubKeyTree(RegistryPath, throwOnMissingSubKey: false);
+        if (IsAdministrator())
+        {
+            Registry.LocalMachine.DeleteSubKeyTree(RegistryPath, throwOnMissingSubKey: false);
+        }
+    }
+
+    void CreateStartMenuShortcuts(string targetDir)
+    {
+        Directory.CreateDirectory(StartMenuDir);
+        CreateShortcut(Path.Combine(StartMenuDir, AppName + ".lnk"), AppExePath(targetDir), targetDir, AppExePath(targetDir));
+        CreateShortcut(
+            Path.Combine(StartMenuDir, "Uninstall " + AppName + ".lnk"),
+            InstalledSetupPath(targetDir),
+            targetDir,
+            InstalledSetupPath(targetDir),
+            "--uninstall --dir " + Quote(targetDir));
+    }
+
+    void DeleteStartMenuShortcuts()
+    {
+        if (Directory.Exists(StartMenuDir)) DeleteDirectory(StartMenuDir);
     }
 
     void CreateShortcut(string shortcutPath, string targetPath, string workingDirectory, string iconPath, string arguments = "")
@@ -339,28 +618,40 @@ sealed class InstallerForm : Form
         process?.WaitForExit();
     }
 
-    void RelaunchFromTemp(string action, bool removeSettings)
+    bool ShouldRelaunch(string selectedAction, string targetDir)
     {
-        var tempSetup = Path.Combine(Path.GetTempPath(), "Vic3ModLauncher-Setup-" + Guid.NewGuid().ToString("N") + ".exe");
-        File.Copy(Application.ExecutablePath, tempSetup, overwrite: true);
+        if ((selectedAction == "reinstall" || selectedAction == "uninstall") && RunningFromDirectory(targetDir)) return true;
+        return RequiresAdmin(targetDir) && !IsAdministrator();
+    }
+
+    void Relaunch(string selectedAction, string targetDir, bool removeSettings, bool createDesktopShortcut)
+    {
+        var executable = Application.ExecutablePath;
+        if (selectedAction == "reinstall" || selectedAction == "uninstall")
+        {
+            var tempSetup = Path.Combine(Path.GetTempPath(), "Vic3ModLauncher-Setup-" + Guid.NewGuid().ToString("N") + ".exe");
+            File.Copy(Application.ExecutablePath, tempSetup, overwrite: true);
+            executable = tempSetup;
+        }
+
         var startInfo = new ProcessStartInfo
         {
-            FileName = tempSetup,
-            UseShellExecute = true
+            FileName = executable,
+            UseShellExecute = true,
+            Arguments = "--" + selectedAction + " --auto-run --dir " + Quote(targetDir)
         };
-        startInfo.ArgumentList.Add("--" + action);
-        if (removeSettings) startInfo.ArgumentList.Add("--remove-settings");
+        if (removeSettings) startInfo.Arguments += " --remove-settings";
+        if (!createDesktopShortcut) startInfo.Arguments += " --no-desktop-shortcut";
+        if (RequiresAdmin(targetDir) && !IsAdministrator()) startInfo.Verb = "runas";
         Process.Start(startInfo);
     }
 
     void SetBusy(bool busy)
     {
         Cursor = busy ? Cursors.WaitCursor : Cursors.Default;
-        installButton.Enabled = !busy;
-        reinstallButton.Enabled = !busy;
-        uninstallButton.Enabled = !busy;
-        closeButton.Enabled = !busy;
-        removeSettingsBox.Enabled = !busy;
+        backButton.Enabled = !busy && step > 0;
+        nextButton.Enabled = !busy;
+        cancelButton.Enabled = !busy;
     }
 
     static void DeleteDirectory(string path)
@@ -382,29 +673,86 @@ sealed class InstallerForm : Form
         return "\"" + value + "\"";
     }
 
-    string InstallDir => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        AppFolderName);
+    static bool IsAdministrator()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    static string DefaultInstallDir()
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), AppName);
+    }
+
+    static bool RequiresAdmin(string targetDir)
+    {
+        var full = Path.GetFullPath(targetDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        return StartsWithPath(full, programFiles) || StartsWithPath(full, programFilesX86) || StartsWithPath(full, windows);
+    }
+
+    static bool StartsWithPath(string path, string parent)
+    {
+        if (string.IsNullOrWhiteSpace(parent)) return false;
+        var fullParent = Path.GetFullPath(parent).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return path.StartsWith(fullParent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    static string ReadInstallDirFromRegistry(RegistryKey root)
+    {
+        using var key = root.OpenSubKey(RegistryPath);
+        return key?.GetValue("InstallLocation")?.ToString();
+    }
+
+    static string FindInstalledDir()
+    {
+        var hklm = ReadInstallDirFromRegistry(Registry.LocalMachine);
+        if (!string.IsNullOrWhiteSpace(hklm) && File.Exists(Path.Combine(hklm, AppExeName))) return hklm;
+
+        var hkcu = ReadInstallDirFromRegistry(Registry.CurrentUser);
+        if (!string.IsNullOrWhiteSpace(hkcu) && File.Exists(Path.Combine(hkcu, AppExeName))) return hkcu;
+
+        var oldLocalAppData = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Vic3ModLauncher");
+        if (File.Exists(Path.Combine(oldLocalAppData, AppExeName))) return oldLocalAppData;
+
+        return "";
+    }
+
+    static string FindInstallDirOrDefault()
+    {
+        var installed = FindInstalledDir();
+        return string.IsNullOrWhiteSpace(installed) ? DefaultInstallDir() : installed;
+    }
+
+    string FindInstalledDirOrCurrent()
+    {
+        var installed = FindInstalledDir();
+        if (!string.IsNullOrWhiteSpace(installed)) return installed;
+        return installDir;
+    }
 
     string ConfigDir => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        AppFolderName);
+        "Vic3ModLauncher");
 
     string DesktopDir => Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+    string StartMenuDir => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+        AppName);
 
-    string AppExePath => Path.Combine(InstallDir, AppExeName);
-    string InstalledSetupPath => Path.Combine(InstallDir, SetupExeName);
-    string AppShortcutPath => Path.Combine(DesktopDir, AppName + ".lnk");
-    string UninstallShortcutPath => Path.Combine(DesktopDir, "Uninstall " + AppName + ".lnk");
+    string DesktopShortcutPath => Path.Combine(DesktopDir, AppName + ".lnk");
+    static string AppExePath(string targetDir) => Path.Combine(targetDir, AppExeName);
+    static string InstalledSetupPath(string targetDir) => Path.Combine(targetDir, SetupExeName);
 
-    bool RunningFromInstallDir
+    bool RunningFromDirectory(string targetDir)
     {
-        get
-        {
-            var current = Path.GetFullPath(Application.ExecutablePath);
-            var install = Path.GetFullPath(InstallDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            return current.StartsWith(install, StringComparison.OrdinalIgnoreCase);
-        }
+        var current = Path.GetFullPath(Application.ExecutablePath);
+        var target = Path.GetFullPath(targetDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return current.StartsWith(target, StringComparison.OrdinalIgnoreCase);
     }
 }
 '@
