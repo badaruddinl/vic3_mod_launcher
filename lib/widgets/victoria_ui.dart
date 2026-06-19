@@ -47,19 +47,31 @@ class VictoriaShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xff1e211d), Color(0xff071314), Color(0xff031112)],
-        ),
-      ),
+    return ColoredBox(
+      color: VicColors.ink,
       child: Material(
         type: MaterialType.transparency,
         child: Stack(
           fit: StackFit.expand,
           children: [
+            Image.asset(
+              'assets/brand/launcher_backdrop.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x44071314),
+                    Color(0xaa071314),
+                    Color(0xdd031112),
+                  ],
+                ),
+              ),
+            ),
             const CustomPaint(painter: VictoriaBackdropPainter()),
             DefaultTextStyle(
               style: const TextStyle(
