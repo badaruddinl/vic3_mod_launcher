@@ -919,8 +919,6 @@ $process.Id
       if (mounted) Navigator.of(context).pop();
       await const UpdateService().launchInstaller(installer);
       _log('Update installer launched: ${installer.path}');
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      exit(0);
     } catch (error) {
       if (mounted) Navigator.of(context).pop();
       _log('Update download failed: $error');
