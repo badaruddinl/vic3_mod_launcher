@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models.dart';
 import '../services/launcher_config.dart';
-import '../widgets/settings/general_settings_tab.dart';
-import '../widgets/settings/settings_content_tabs.dart';
 import '../widgets/settings/settings_shell_parts.dart';
+import '../widgets/settings/settings_tab_body.dart';
 import '../widgets/victoria_ui.dart';
 
 class LauncherSettingsScreen extends StatefulWidget {
@@ -139,7 +138,46 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
             const SizedBox(height: 12),
             SettingsTabs(controller: controller),
             Expanded(
-              child: SettingsTabBody(controller: controller, widget: widget),
+              child: SettingsTabBody(
+                controller: controller,
+                config: widget.config,
+                mods: widget.mods,
+                availableModIds: widget.availableModIds,
+                activeModIds: widget.activeModIds,
+                selectedAvailable: widget.selectedAvailable,
+                selectedActive: widget.selectedActive,
+                validations: widget.validations,
+                dlcs: widget.dlcs,
+                disabledDlcs: widget.disabledDlcs,
+                playsets: widget.playsets,
+                onPickGameRoot: widget.onPickGameRoot,
+                onPickUserData: widget.onPickUserData,
+                onAutoDetect: widget.onAutoDetect,
+                onRefresh: widget.onRefresh,
+                onAddExtraRoot: widget.onAddExtraRoot,
+                onRemoveExtraRoot: widget.onRemoveExtraRoot,
+                onAutoRepairChanged: widget.onAutoRepairChanged,
+                onDebugModeChanged: widget.onDebugModeChanged,
+                onAvailableTap: widget.onAvailableTap,
+                onActiveTap: widget.onActiveTap,
+                onActiveReorder: widget.onActiveReorder,
+                onEnable: widget.onEnable,
+                onDisable: widget.onDisable,
+                onUp: widget.onUp,
+                onDown: widget.onDown,
+                onTop: widget.onTop,
+                onBottom: widget.onBottom,
+                onSavePlayset: widget.onSavePlayset,
+                onSavePlaysetAs: widget.onSavePlaysetAs,
+                onLoadPlayset: widget.onLoadPlayset,
+                onDeletePlayset: widget.onDeletePlayset,
+                onImportZip: widget.onImportZip,
+                onToggleDlc: widget.onToggleDlc,
+                onEnableAllDlc: widget.onEnableAllDlc,
+                onDiagnose: widget.onDiagnose,
+                onRepair: widget.onRepair,
+                onRestoreBackup: widget.onRestoreBackup,
+              ),
             ),
             const SizedBox(height: 14),
             SettingsActionBar(
@@ -149,80 +187,6 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class SettingsTabBody extends StatelessWidget {
-  const SettingsTabBody({
-    super.key,
-    required this.controller,
-    required this.widget,
-  });
-
-  final TabController controller;
-  final LauncherSettingsScreen widget;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: VicColors.panel,
-        border: Border.all(color: VicColors.goldDark),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
-      ),
-      child: TabBarView(
-        controller: controller,
-        children: [
-          GeneralSettingsTab(
-            config: widget.config,
-            onPickGameRoot: widget.onPickGameRoot,
-            onPickUserData: widget.onPickUserData,
-            onAutoDetect: widget.onAutoDetect,
-            onRefresh: widget.onRefresh,
-            onAddExtraRoot: widget.onAddExtraRoot,
-            onRemoveExtraRoot: widget.onRemoveExtraRoot,
-            onAutoRepairChanged: widget.onAutoRepairChanged,
-            onDebugModeChanged: widget.onDebugModeChanged,
-          ),
-          ModsSettingsTab(
-            mods: widget.mods,
-            availableModIds: widget.availableModIds,
-            activeModIds: widget.activeModIds,
-            selectedAvailable: widget.selectedAvailable,
-            selectedActive: widget.selectedActive,
-            validations: widget.validations,
-            playsets: widget.playsets,
-            onAvailableTap: widget.onAvailableTap,
-            onActiveTap: widget.onActiveTap,
-            onActiveReorder: widget.onActiveReorder,
-            onEnable: widget.onEnable,
-            onDisable: widget.onDisable,
-            onUp: widget.onUp,
-            onDown: widget.onDown,
-            onTop: widget.onTop,
-            onBottom: widget.onBottom,
-            onSavePlayset: widget.onSavePlayset,
-            onSavePlaysetAs: widget.onSavePlaysetAs,
-            onLoadPlayset: widget.onLoadPlayset,
-            onDeletePlayset: widget.onDeletePlayset,
-            onImportZip: widget.onImportZip,
-          ),
-          DlcSettingsTab(
-            dlcs: widget.dlcs,
-            disabledDlcs: widget.disabledDlcs,
-            onToggleDlc: widget.onToggleDlc,
-            onEnableAllDlc: widget.onEnableAllDlc,
-          ),
-          RepairSettingsTab(
-            onDiagnose: widget.onDiagnose,
-            onRepair: widget.onRepair,
-            onRestoreBackup: widget.onRestoreBackup,
-            onRefresh: widget.onRefresh,
-            onAutoDetect: widget.onAutoDetect,
-          ),
-        ],
       ),
     );
   }

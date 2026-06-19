@@ -54,13 +54,15 @@ class VictoriaDialog extends StatelessWidget {
                   const Divider(height: 1, color: Color(0x6678522e)),
                   const SizedBox(height: 14),
                   child,
-                  const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    alignment: WrapAlignment.end,
-                    children: actions,
-                  ),
+                  if (actions.isNotEmpty) ...[
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment: WrapAlignment.end,
+                      children: actions,
+                    ),
+                  ],
                 ],
               ),
             ),

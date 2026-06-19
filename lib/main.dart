@@ -10,8 +10,8 @@ Future<void> main() async {
   debugPaintSizeEnabled = false;
   await windowManager.ensureInitialized();
   const windowOptions = WindowOptions(
-    size: Size(760, 920),
-    minimumSize: Size(700, 820),
+    size: Size(720, 880),
+    minimumSize: Size(680, 800),
     center: true,
     titleBarStyle: TitleBarStyle.hidden,
     backgroundColor: Color(0xff071314),
