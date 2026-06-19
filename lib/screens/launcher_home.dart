@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../constants.dart';
 import '../models.dart';
+import '../services/diagnostic_service.dart';
 import '../services/descriptor_service.dart';
 import '../services/json_service.dart';
 import '../services/launcher_config.dart';
@@ -536,6 +537,18 @@ $process.Id
     );
   }
 
+  void _diagnose() {
+    final report = const DiagnosticService().run(
+      config: config,
+      knownMods: mods,
+      gameVersion: gameVersion,
+    );
+    _log(
+      report.hasBlockingIssues ? 'Diagnosis: check required' : 'Diagnosis: OK',
+    );
+    _showMessage('Diagnosis', report.toDisplayText());
+  }
+
   Future<void> _addExtraRoot() async {
     final path = await getDirectoryPath();
     if (path == null) return;
@@ -674,6 +687,7 @@ $process.Id
             onPickGameRoot: _pickGameRoot,
             onAutoDetect: _autoDetectPaths,
             onRefresh: _refresh,
+            onDiagnose: _diagnose,
             onImportZip: _importZip,
             onRepair: () => _repairDescriptors(showDialogAfter: true),
             onSave: _savePlayset,

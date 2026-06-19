@@ -11,6 +11,7 @@ class PathHeader extends StatelessWidget {
     required this.onPickGameRoot,
     required this.onAutoDetect,
     required this.onRefresh,
+    required this.onDiagnose,
     required this.onImportZip,
     required this.onRepair,
     required this.onSave,
@@ -24,6 +25,7 @@ class PathHeader extends StatelessWidget {
   final VoidCallback onPickGameRoot;
   final VoidCallback onAutoDetect;
   final VoidCallback onRefresh;
+  final VoidCallback onDiagnose;
   final VoidCallback onImportZip;
   final VoidCallback onRepair;
   final VoidCallback onSave;
@@ -90,6 +92,12 @@ class PathHeader extends StatelessWidget {
                   onPressed: onRefresh,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: onDiagnose,
+                  icon: const Icon(Icons.bug_report_outlined),
+                  label: const Text('Diagnose'),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
