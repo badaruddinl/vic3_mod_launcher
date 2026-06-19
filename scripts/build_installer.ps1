@@ -59,6 +59,39 @@ function Get-AppVersion {
   }
 }
 
+function Get-ReleaseNotes {
+  param(
+    [Parameter(Mandatory = $true)][string]$VersionLabel
+  )
+
+  $changelogPath = Join-Path $root "CHANGELOG.md"
+  if (-not (Test-Path -LiteralPath $changelogPath)) {
+    return "See the GitHub release notes for changes."
+  }
+
+  $lines = Get-Content -LiteralPath $changelogPath
+  $capture = $false
+  $notes = New-Object System.Collections.Generic.List[string]
+  foreach ($line in $lines) {
+    if ($line -match "^##\s+$([regex]::Escape($VersionLabel))(\s+-\s+.*)?\s*$") {
+      $capture = $true
+      continue
+    }
+    if ($capture -and $line -match "^##\s+") {
+      break
+    }
+    if ($capture) {
+      $notes.Add($line)
+    }
+  }
+
+  $text = ($notes -join [Environment]::NewLine).Trim()
+  if ([string]::IsNullOrWhiteSpace($text)) {
+    return "See the GitHub release notes for changes."
+  }
+  return $text
+}
+
 function Remove-ExistingInstaller {
   if (-not (Test-Path -LiteralPath $installerPath)) {
     return
@@ -89,6 +122,8 @@ function Write-Utf8NoBom {
 
 $iscc = Find-InnoCompiler
 $version = Get-AppVersion
+$versionLabel = "$($version.Display)+$([int]($version.File.Split(".")[-1]))"
+$releaseNotes = Get-ReleaseNotes -VersionLabel $versionLabel
 
 Set-Location $root
 powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "build_release.ps1")
@@ -128,7 +163,7 @@ $manifest = [ordered]@{
   installerUrl = "$releaseBaseUrl/Vic3ModLauncher-Setup.exe"
   sha256 = $hash
   publishedAt = (Get-Date).ToUniversalTime().ToString("o")
-  notes = "See the GitHub release notes for changes."
+  notes = $releaseNotes
 }
 Write-Utf8NoBom -Path $manifestPath -Content ($manifest | ConvertTo-Json)
 

@@ -150,9 +150,17 @@ Isi manifest:
 Alur release:
 
 1. Naikkan `version` di `pubspec.yaml`, contoh `1.0.1+2`.
-2. Jalankan `.\scripts\build_installer.ps1`.
-3. Upload `dist\Vic3ModLauncher-Setup.exe` dan `dist\latest.json` ke GitHub Release atau hosting publik.
-4. App terinstall akan melihat update jika versi manifest lebih baru dari versi lokal.
+2. Tambahkan entry di `CHANGELOG.md` dengan heading yang sama, contoh `## 1.0.1+2 - 2026-06-19`.
+3. Jalankan `.\scripts\build_installer.ps1`.
+4. Upload `dist\Vic3ModLauncher-Setup.exe` dan `dist\latest.json` ke GitHub Release atau hosting publik.
+5. App terinstall akan melihat update jika versi manifest lebih baru dari versi lokal.
+
+Aturan versi:
+
+- `MAJOR`: breaking change.
+- `MINOR`: fitur baru yang kompatibel.
+- `PATCH`: bug fix atau perbaikan kecil.
+- `BUILD`: nomor build installer/app untuk update detection.
 
 Untuk repo private, jangan pakai URL release private sebagai update source aplikasi publik. Pilih salah satu:
 
