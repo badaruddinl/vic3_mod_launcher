@@ -134,6 +134,7 @@ class UpdateService {
       '/SUPPRESSMSGBOXES',
       '/NORESTART',
       '/CLOSEAPPLICATIONS',
+      '/FORCECLOSEAPPLICATIONS',
     ];
     AppLogger.info(
       'Launching update installer: ${installer.path} ${args.join(' ')}',
