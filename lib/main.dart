@@ -9,15 +9,18 @@ Future<void> main() async {
   debugPaintBaselinesEnabled = false;
   debugPaintSizeEnabled = false;
   await windowManager.ensureInitialized();
+  const portraitWindowSize = Size(790, 1010);
   const windowOptions = WindowOptions(
-    size: Size(720, 880),
-    minimumSize: Size(680, 800),
+    size: portraitWindowSize,
+    minimumSize: portraitWindowSize,
+    maximumSize: portraitWindowSize,
     center: true,
     titleBarStyle: TitleBarStyle.hidden,
     backgroundColor: Color(0xff071314),
   );
   runApp(const Vic3LauncherApp());
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.setResizable(false);
     await windowManager.show();
     await windowManager.focus();
   });
