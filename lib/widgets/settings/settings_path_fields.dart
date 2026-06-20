@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../victoria_ui.dart';
+import 'extra_mod_root_chip.dart';
+import 'settings_field_box.dart';
+import 'settings_row_label.dart';
 
 class SettingsPathRow extends StatelessWidget {
   const SettingsPathRow({
@@ -22,37 +25,10 @@ class SettingsPathRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: VicColors.gold, size: 30),
-        const SizedBox(width: 14),
-        SizedBox(
-          width: 220,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: VicColors.parchment,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: VicColors.muted, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
+        SettingsRowLabel(icon: icon, title: title, subtitle: subtitle),
         Expanded(child: PathValueField(value: value)),
         const SizedBox(width: 8),
-        IconButton.outlined(
-          onPressed: onBrowse,
-          icon: const Icon(Icons.more_horiz),
-          tooltip: 'Browse',
-        ),
+        BrowsePathButton(onPressed: onBrowse),
       ],
     );
   }
@@ -65,14 +41,9 @@ class PathValueField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xff0b1718),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: VicColors.goldDark),
-      ),
+    return SettingsFieldBox(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.zero,
         child: Text(
           value.isEmpty ? 'Not set' : value,
           maxLines: 1,
@@ -101,40 +72,16 @@ class ExtraModRootsRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(
-          Icons.create_new_folder_outlined,
-          color: VicColors.gold,
-          size: 30,
-        ),
-        const SizedBox(width: 14),
-        const SizedBox(
-          width: 220,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Additional Mod Folders',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: VicColors.parchment, fontSize: 16),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Scan extra folders for mods.',
-                style: TextStyle(color: VicColors.muted, fontSize: 12),
-              ),
-            ],
-          ),
+        const SettingsRowLabel(
+          icon: Icons.create_new_folder_outlined,
+          title: 'Additional Mod Folders',
+          subtitle: 'Scan extra folders for mods.',
         ),
         Expanded(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xff0b1718),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: VicColors.goldDark),
-            ),
+          child: SettingsFieldBox(
+            padding: const EdgeInsets.all(9),
             child: Padding(
-              padding: const EdgeInsets.all(9),
+              padding: EdgeInsets.zero,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -144,19 +91,7 @@ class ExtraModRootsRow extends StatelessWidget {
                       style: TextStyle(color: VicColors.muted, fontSize: 13),
                     ),
                   for (final root in roots)
-                    ListTile(
-                      dense: true,
-                      visualDensity: VisualDensity.compact,
-                      title: Text(
-                        root,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => onRemove(root),
-                      ),
-                    ),
+                    ExtraModRootChip(root: root, onRemove: onRemove),
                   TextButton.icon(
                     onPressed: onAdd,
                     icon: const Icon(Icons.add),
