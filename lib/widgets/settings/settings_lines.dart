@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../victoria_ui.dart';
+import 'setting_line_shell.dart';
+import 'setting_line_text.dart';
+import 'victoria_toggle.dart';
 
 class SettingSwitchLine extends StatelessWidget {
   const SettingSwitchLine({
@@ -18,17 +20,13 @@ class SettingSwitchLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return SettingLineShell(
       child: Row(
         children: [
           Expanded(
             child: SettingLineText(title: title, subtitle: subtitle),
           ),
-          Transform.scale(
-            scale: 0.82,
-            child: Switch(value: value, onChanged: onChanged),
-          ),
+          VictoriaToggle(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -51,20 +49,16 @@ class SettingActionLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return SettingLineShell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, color: VicColors.gold),
-            const SizedBox(width: 11),
-            Expanded(
-              child: SettingLineText(title: title, subtitle: subtitle),
-            ),
-          ],
-        ),
+      child: Row(
+        children: [
+          SettingLineIcon(icon: icon),
+          const SizedBox(width: 11),
+          Expanded(
+            child: SettingLineText(title: title, subtitle: subtitle),
+          ),
+        ],
       ),
     );
   }
@@ -82,57 +76,15 @@ class ComingSoonLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return SettingLineShell(
       child: Row(
         children: [
           Expanded(
             child: SettingLineText(title: title, subtitle: subtitle),
           ),
-          const Icon(Icons.lock_outline, color: VicColors.muted),
+          const SettingLineIcon(icon: Icons.lock_outline, muted: true),
         ],
       ),
-    );
-  }
-}
-
-class SettingLineText extends StatelessWidget {
-  const SettingLineText({
-    super.key,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: VicColors.parchment,
-            fontSize: 14,
-            decoration: TextDecoration.none,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: VicColors.muted,
-            fontSize: 11.5,
-            decoration: TextDecoration.none,
-          ),
-        ),
-      ],
     );
   }
 }
