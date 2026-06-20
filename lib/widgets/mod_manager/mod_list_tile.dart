@@ -22,35 +22,87 @@ class ModListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? const Color(0x55215a54) : Colors.transparent,
-      child: ListTile(
-        dense: true,
-        onTap: onTap,
-        leading:
-            leading ??
-            Icon(
-              mod.source == 'external' ? Icons.link : Icons.folder_outlined,
-              color: VicColors.gold,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected ? const Color(0x66215a54) : const Color(0x33101f20),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? VicColors.tealBright : const Color(0x5578522e),
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                children: [
+                  leading ?? ModSourceIcon(source: mod.source),
+                  const SizedBox(width: 10),
+                  Expanded(child: ModListTileText(mod: mod)),
+                  const SizedBox(width: 8),
+                  ModCompatibilityBadge(
+                    compatible: mod.compatible,
+                    supportedVersion: mod.supportedVersion,
+                    validation: validation,
+                  ),
+                ],
+              ),
             ),
-        title: Text(
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ModSourceIcon extends StatelessWidget {
+  const ModSourceIcon({super.key, required this.source});
+
+  final String source;
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(
+      source == 'external' ? Icons.link : Icons.folder_outlined,
+      color: VicColors.gold,
+      size: 22,
+    );
+  }
+}
+
+class ModListTileText extends StatelessWidget {
+  const ModListTileText({super.key, required this.mod});
+
+  final ModInfo mod;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
           mod.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: VicColors.parchment),
+          style: const TextStyle(
+            color: VicColors.parchment,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        subtitle: Text(
+        const SizedBox(height: 2),
+        Text(
           '${mod.source} | supported ${mod.supportedVersion.isEmpty ? 'unknown' : mod.supportedVersion} | mod ${mod.version.isEmpty ? 'unknown' : mod.version}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: VicColors.muted, fontSize: 12),
         ),
-        trailing: ModCompatibilityBadge(
-          compatible: mod.compatible,
-          supportedVersion: mod.supportedVersion,
-          validation: validation,
-        ),
-      ),
+      ],
     );
   }
 }

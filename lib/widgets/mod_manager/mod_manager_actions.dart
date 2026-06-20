@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'mod_action_button.dart';
+
 class ModManagerActions extends StatelessWidget {
   const ModManagerActions({
     super.key,
@@ -21,30 +23,48 @@ class ModManagerActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 116,
+      width: 64,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FilledButton.tonal(
+            ModActionButton(
+              tooltip: 'Enable selected',
+              icon: Icons.chevron_right,
+              primary: true,
               onPressed: onEnable,
-              child: const Text('Enable'),
             ),
             const SizedBox(height: 8),
-            FilledButton.tonal(
+            ModActionButton(
+              tooltip: 'Disable selected',
+              icon: Icons.chevron_left,
               onPressed: onDisable,
-              child: const Text('Disable'),
             ),
-            const Divider(height: 28),
-            OutlinedButton(onPressed: onUp, child: const Text('Up')),
+            const SizedBox(height: 18),
+            ModActionButton(
+              tooltip: 'Move up',
+              icon: Icons.keyboard_arrow_up,
+              onPressed: onUp,
+            ),
             const SizedBox(height: 8),
-            OutlinedButton(onPressed: onDown, child: const Text('Down')),
+            ModActionButton(
+              tooltip: 'Move down',
+              icon: Icons.keyboard_arrow_down,
+              onPressed: onDown,
+            ),
             const SizedBox(height: 8),
-            OutlinedButton(onPressed: onTop, child: const Text('Top')),
+            ModActionButton(
+              tooltip: 'Move to top',
+              icon: Icons.vertical_align_top,
+              onPressed: onTop,
+            ),
             const SizedBox(height: 8),
-            OutlinedButton(onPressed: onBottom, child: const Text('Bottom')),
+            ModActionButton(
+              tooltip: 'Move to bottom',
+              icon: Icons.vertical_align_bottom,
+              onPressed: onBottom,
+            ),
           ],
         ),
       ),
