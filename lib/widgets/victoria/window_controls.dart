@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'theme.dart';
+import 'window_button.dart';
 
 class VictoriaTitleBar extends StatelessWidget {
   const VictoriaTitleBar({
@@ -36,13 +36,13 @@ class VictoriaWindowButtons extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _WindowButton(
+        VictoriaWindowButton(
           tooltip: 'Minimize',
           icon: Icons.remove,
           onPressed: () => windowManager.minimize(),
         ),
         const SizedBox(width: 8),
-        _WindowButton(
+        VictoriaWindowButton(
           tooltip: 'Close',
           icon: Icons.close,
           onPressed: () => windowManager.close(),
@@ -66,49 +66,10 @@ class VictoriaIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0x44102121),
-        border: Border.all(color: VicColors.goldDark),
-      ),
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        icon: Icon(icon),
-        color: VicColors.gold,
-      ),
-    );
-  }
-}
-
-class _WindowButton extends StatelessWidget {
-  const _WindowButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkResponse(
-          onTap: onPressed,
-          radius: 22,
-          child: SizedBox(
-            width: 34,
-            height: 34,
-            child: Icon(icon, color: VicColors.gold, size: 24),
-          ),
-        ),
-      ),
+    return VictoriaRoundIconButton(
+      icon: icon,
+      tooltip: tooltip,
+      onPressed: onPressed,
     );
   }
 }

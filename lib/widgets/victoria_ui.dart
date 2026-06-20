@@ -1,7 +1,13 @@
 export 'victoria/backdrop_painter.dart';
 export 'victoria/dialog.dart';
+export 'victoria/frame.dart';
+export 'victoria/gilded_button.dart';
+export 'victoria/gilded_panel.dart';
 export 'victoria/header.dart';
+export 'victoria/header_logo_mark.dart';
+export 'victoria/header_ornament.dart';
 export 'victoria/shell.dart';
-export 'victoria/surfaces.dart';
 export 'victoria/theme.dart';
+export 'victoria/version_badge.dart';
+export 'victoria/window_button.dart';
 export 'victoria/window_controls.dart';
