@@ -10,13 +10,27 @@ class VictoriaHeaderMark extends StatelessWidget {
     super.key,
     required this.gameVersion,
     this.compact = false,
+    this.minimal = false,
   });
 
   final String gameVersion;
   final bool compact;
+  final bool minimal;
 
   @override
   Widget build(BuildContext context) {
+    if (minimal) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const VictoriaLogoMark(size: 42),
+          const SizedBox(width: 10),
+          VictoriaVersionBadge(version: gameVersion),
+        ],
+      );
+    }
+
     final iconSize = compact ? 58.0 : 70.0;
     final titleSize = compact ? 29.0 : 34.0;
     final ornamentWidth = compact ? 210.0 : 260.0;

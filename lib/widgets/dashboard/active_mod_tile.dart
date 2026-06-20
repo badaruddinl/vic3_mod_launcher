@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../models.dart';
+import '../common/ellipsis_tooltip_text.dart';
+import '../mod_display_name.dart';
 import '../victoria_ui.dart';
 
 class ActiveModTile extends StatelessWidget {
@@ -20,15 +22,16 @@ class ActiveModTile extends StatelessWidget {
     final ok =
         validation?.health == ModHealth.ok ||
         mod.compatible == VersionStatus.ok;
+    final displayName = formatModDisplayName(mod.name);
     return Row(
       children: [
-        ModThumbnail(source: mod.source, size: compact ? 46 : 62),
+        ModThumbnail(source: mod.source, size: compact ? 38 : 62),
         SizedBox(width: compact ? 10 : 12),
         Expanded(
-          child: Text(
-            mod.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          child: EllipsisTooltipText(
+            displayName,
+            tooltip: mod.name,
+            maxLines: compact ? 1 : 2,
             style: TextStyle(
               color: VicColors.parchment,
               fontFamily: 'Georgia',

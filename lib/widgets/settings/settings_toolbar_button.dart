@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 
 class SettingsToolbarButton extends StatelessWidget {
@@ -41,10 +42,8 @@ class SettingsToolbarButton extends StatelessWidget {
                   Icon(icon, size: 18, color: VicColors.gold),
                   const SizedBox(width: 8),
                   Flexible(
-                    child: Text(
+                    child: EllipsisTooltipText(
                       label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: VicColors.parchment,
                         fontSize: 13,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models.dart';
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 
 class SavedPlaysetCard extends StatelessWidget {
@@ -64,20 +65,16 @@ class _SavedPlaysetText extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        EllipsisTooltipText(
           playset.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: VicColors.parchment,
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 3),
-        Text(
+        EllipsisTooltipText(
           playset.modifiedAt.toLocal().toString(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: VicColors.muted, fontSize: 12),
         ),
       ],

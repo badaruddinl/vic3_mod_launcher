@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 
 class LogEntryRow extends StatelessWidget {
@@ -20,10 +21,8 @@ class LogEntryRow extends StatelessWidget {
           ),
           const SizedBox(width: 11),
           Expanded(
-            child: Text(
+            child: EllipsisTooltipText(
               message,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: VicColors.parchment,
                 fontFamily: 'Consolas',

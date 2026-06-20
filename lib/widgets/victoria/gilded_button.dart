@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import 'theme.dart';
 
 class GildedButton extends StatelessWidget {
@@ -53,10 +54,8 @@ class GildedButton extends StatelessWidget {
                   const SizedBox(width: 10),
                 ],
                 Flexible(
-                  child: Text(
+                  child: EllipsisTooltipText(
                     label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Georgia',
                       fontSize: large ? 25 : 16,

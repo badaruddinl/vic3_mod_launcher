@@ -10,7 +10,6 @@ class GeneralSettingsTab extends StatelessWidget {
     required this.onPickGameRoot,
     required this.onPickUserData,
     required this.onAutoDetect,
-    required this.onRefresh,
     required this.onAddExtraRoot,
     required this.onRemoveExtraRoot,
     required this.onAutoRepairChanged,
@@ -21,7 +20,6 @@ class GeneralSettingsTab extends StatelessWidget {
   final VoidCallback onPickGameRoot;
   final VoidCallback onPickUserData;
   final VoidCallback onAutoDetect;
-  final VoidCallback onRefresh;
   final VoidCallback onAddExtraRoot;
   final ValueChanged<String> onRemoveExtraRoot;
   final ValueChanged<bool> onAutoRepairChanged;
@@ -30,38 +28,31 @@ class GeneralSettingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       child: Column(
         children: [
-          SettingsFoldersPanel(
-            config: config,
-            onPickGameRoot: onPickGameRoot,
-            onPickUserData: onPickUserData,
-            onAddExtraRoot: onAddExtraRoot,
-            onRemoveExtraRoot: onRemoveExtraRoot,
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: RepairPreferencesPanel(
-                    autoRepair: config.autoRepair,
-                    onAutoRepairChanged: onAutoRepairChanged,
-                    onAutoDetect: onAutoDetect,
-                    onRefresh: onRefresh,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: LaunchBehaviorPanel(
-                    debugMode: config.debugMode,
-                    onDebugModeChanged: onDebugModeChanged,
-                  ),
-                ),
-              ],
+          SizedBox(
+            height: 242,
+            child: SettingsFoldersPanel(
+              config: config,
+              onPickGameRoot: onPickGameRoot,
+              onPickUserData: onPickUserData,
+              onAddExtraRoot: onAddExtraRoot,
+              onRemoveExtraRoot: onRemoveExtraRoot,
             ),
           ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 146,
+            child: GeneralPreferencesPanel(
+              autoRepair: config.autoRepair,
+              debugMode: config.debugMode,
+              onAutoRepairChanged: onAutoRepairChanged,
+              onDebugModeChanged: onDebugModeChanged,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(child: AutoDetectPanel(onAutoDetect: onAutoDetect)),
         ],
       ),
     );

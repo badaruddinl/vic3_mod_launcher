@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models.dart';
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 import 'victoria_toggle.dart';
 
@@ -69,20 +70,16 @@ class DlcTileText extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        EllipsisTooltipText(
           dlc.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: VicColors.parchment,
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 3),
-        Text(
+        EllipsisTooltipText(
           dlc.ref,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: VicColors.muted, fontSize: 12),
         ),
       ],

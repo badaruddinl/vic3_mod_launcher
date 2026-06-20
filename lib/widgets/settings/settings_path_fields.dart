@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 import 'extra_mod_root_chip.dart';
 import 'settings_field_box.dart';
@@ -13,6 +14,7 @@ class SettingsPathRow extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onBrowse,
+    this.labelWidth = 134,
   });
 
   final IconData icon;
@@ -20,12 +22,18 @@ class SettingsPathRow extends StatelessWidget {
   final String subtitle;
   final String value;
   final VoidCallback onBrowse;
+  final double labelWidth;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SettingsRowLabel(icon: icon, title: title, subtitle: subtitle),
+        SettingsRowLabel(
+          icon: icon,
+          title: title,
+          subtitle: subtitle,
+          width: labelWidth,
+        ),
         Expanded(child: PathValueField(value: value)),
         const SizedBox(width: 8),
         BrowsePathButton(onPressed: onBrowse),
@@ -44,10 +52,8 @@ class PathValueField extends StatelessWidget {
     return SettingsFieldBox(
       child: Padding(
         padding: EdgeInsets.zero,
-        child: Text(
+        child: EllipsisTooltipText(
           value.isEmpty ? 'Not set' : value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: VicColors.parchment, fontSize: 13),
         ),
       ),
@@ -74,8 +80,9 @@ class ExtraModRootsRow extends StatelessWidget {
       children: [
         const SettingsRowLabel(
           icon: Icons.create_new_folder_outlined,
-          title: 'Additional Mod Folders',
-          subtitle: 'Scan extra folders for mods.',
+          title: 'Mod Folders',
+          subtitle: 'Extra scan paths.',
+          width: 134,
         ),
         Expanded(
           child: SettingsFieldBox(
@@ -92,10 +99,16 @@ class ExtraModRootsRow extends StatelessWidget {
                     ),
                   for (final root in roots)
                     ExtraModRootChip(root: root, onRemove: onRemove),
-                  TextButton.icon(
+                  TextButton(
                     onPressed: onAdd,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Folder'),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, size: 18),
+                        SizedBox(width: 6),
+                        Text('Add Folder', maxLines: 1),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 
 class SettingsTabs extends StatelessWidget {
@@ -12,6 +13,7 @@ class SettingsTabs extends StatelessWidget {
     _SettingsTabData('Mods', Icons.extension_outlined),
     _SettingsTabData('DLC', Icons.inventory_2_outlined),
     _SettingsTabData('Repair', Icons.construction_outlined),
+    _SettingsTabData('Logs', Icons.subject_outlined),
   ];
 
   @override
@@ -42,10 +44,11 @@ class SettingsTabs extends StatelessWidget {
         labelColor: VicColors.gold,
         unselectedLabelColor: VicColors.muted,
         dividerColor: Colors.transparent,
-        labelStyle: const TextStyle(fontFamily: 'Georgia', fontSize: 16),
+        labelPadding: EdgeInsets.zero,
+        labelStyle: const TextStyle(fontFamily: 'Georgia', fontSize: 12),
         unselectedLabelStyle: const TextStyle(
           fontFamily: 'Georgia',
-          fontSize: 15,
+          fontSize: 11,
         ),
         tabs: _tabs
             .map((tab) => Tab(height: 50, child: _SettingsTabLabel(tab: tab)))
@@ -73,11 +76,9 @@ class _SettingsTabLabel extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(tab.icon, size: 17),
-        const SizedBox(width: 7),
-        Flexible(
-          child: Text(tab.label, maxLines: 1, overflow: TextOverflow.ellipsis),
-        ),
+        Icon(tab.icon, size: 15),
+        const SizedBox(width: 4),
+        Flexible(child: EllipsisTooltipText(tab.label)),
       ],
     );
   }
@@ -86,12 +87,10 @@ class _SettingsTabLabel extends StatelessWidget {
 class SettingsActionBar extends StatelessWidget {
   const SettingsActionBar({
     super.key,
-    required this.onBack,
     required this.onSavePlayset,
     required this.onSaveSettings,
   });
 
-  final VoidCallback onBack;
   final VoidCallback onSavePlayset;
   final VoidCallback onSaveSettings;
 
@@ -99,33 +98,20 @@ class SettingsActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < 650;
         return Row(
           children: [
-            SizedBox(
-              width: compact ? 126 : 150,
+            Expanded(
               child: GildedButton(
-                label: 'Back',
-                icon: Icons.chevron_left,
-                secondary: true,
-                onPressed: onBack,
-              ),
-            ),
-            SizedBox(width: compact ? 10 : 14),
-            SizedBox(
-              width: compact ? 164 : 190,
-              child: GildedButton(
-                label: 'Save Playset',
+                label: 'Playset',
                 icon: Icons.save_outlined,
                 secondary: true,
                 onPressed: onSavePlayset,
               ),
             ),
-            const Spacer(),
-            SizedBox(
-              width: compact ? 184 : 214,
+            const SizedBox(width: 10),
+            Expanded(
               child: GildedButton(
-                label: 'Save Settings',
+                label: 'Save',
                 icon: Icons.verified_outlined,
                 onPressed: onSaveSettings,
               ),

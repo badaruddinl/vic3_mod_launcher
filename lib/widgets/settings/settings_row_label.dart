@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 
 class SettingsRowLabel extends StatelessWidget {
@@ -27,10 +28,8 @@ class SettingsRowLabel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              EllipsisTooltipText(
                 title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: VicColors.parchment,
                   fontFamily: 'Georgia',
@@ -38,10 +37,8 @@ class SettingsRowLabel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
+              EllipsisTooltipText(
                 subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: VicColors.muted, fontSize: 12),
               ),
             ],

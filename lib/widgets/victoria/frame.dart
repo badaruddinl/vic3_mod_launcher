@@ -11,7 +11,7 @@ class VictoriaFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xbb071314),
+        color: const Color(0x5f071314),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: VicColors.goldDark, width: 1.2),
         boxShadow: const [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'setting_line_shell.dart';
 import 'setting_line_text.dart';
+import 'settings_toolbar_button.dart';
 import 'victoria_toggle.dart';
 
 class SettingSwitchLine extends StatelessWidget {
@@ -57,6 +58,45 @@ class SettingActionLine extends StatelessWidget {
           const SizedBox(width: 11),
           Expanded(
             child: SettingLineText(title: title, subtitle: subtitle),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingButtonLine extends StatelessWidget {
+  const SettingButtonLine({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.buttonLabel,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String buttonLabel;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingLineShell(
+      child: Row(
+        children: [
+          SettingLineIcon(icon: icon),
+          const SizedBox(width: 11),
+          Expanded(
+            child: SettingLineText(title: title, subtitle: subtitle),
+          ),
+          const SizedBox(width: 10),
+          SettingsToolbarButton(
+            label: buttonLabel,
+            icon: Icons.play_arrow,
+            primary: true,
+            onPressed: onPressed,
           ),
         ],
       ),

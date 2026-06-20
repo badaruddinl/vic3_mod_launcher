@@ -20,8 +20,10 @@ class LauncherSettingsScreen extends StatefulWidget {
     required this.dlcs,
     required this.disabledDlcs,
     required this.playsets,
+    required this.logs,
     required this.onBack,
     required this.updateMenu,
+    this.initialTabIndex = 0,
     required this.onPickGameRoot,
     required this.onPickUserData,
     required this.onAutoDetect,
@@ -62,8 +64,10 @@ class LauncherSettingsScreen extends StatefulWidget {
   final List<DlcInfo> dlcs;
   final Set<String> disabledDlcs;
   final List<SavedPlayset> playsets;
+  final List<String> logs;
   final VoidCallback onBack;
   final Widget updateMenu;
+  final int initialTabIndex;
   final VoidCallback onPickGameRoot;
   final VoidCallback onPickUserData;
   final VoidCallback onAutoDetect;
@@ -103,7 +107,11 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
   @override
   void initState() {
     super.initState();
-    controller = TabController(length: 4, vsync: this);
+    controller = TabController(
+      length: 5,
+      vsync: this,
+      initialIndex: widget.initialTabIndex.clamp(0, 4).toInt(),
+    );
   }
 
   @override
@@ -134,8 +142,12 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
                 ],
               ),
             ),
-            VictoriaHeaderMark(gameVersion: widget.gameVersion, compact: true),
-            const SizedBox(height: 12),
+            VictoriaHeaderMark(
+              gameVersion: widget.gameVersion,
+              compact: true,
+              minimal: true,
+            ),
+            const SizedBox(height: 10),
             SettingsTabs(controller: controller),
             Expanded(
               child: SettingsTabBody(
@@ -150,6 +162,7 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
                 dlcs: widget.dlcs,
                 disabledDlcs: widget.disabledDlcs,
                 playsets: widget.playsets,
+                logs: widget.logs,
                 onPickGameRoot: widget.onPickGameRoot,
                 onPickUserData: widget.onPickUserData,
                 onAutoDetect: widget.onAutoDetect,
@@ -181,7 +194,6 @@ class _LauncherSettingsScreenState extends State<LauncherSettingsScreen>
             ),
             const SizedBox(height: 14),
             SettingsActionBar(
-              onBack: widget.onBack,
               onSavePlayset: widget.onSavePlayset,
               onSaveSettings: widget.onRefresh,
             ),

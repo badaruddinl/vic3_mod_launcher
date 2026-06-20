@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'backdrop_painter.dart';
 import 'surfaces.dart';
 import 'theme.dart';
 
@@ -29,14 +28,13 @@ class VictoriaShell extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
+                    Color(0x11071314),
                     Color(0x44071314),
-                    Color(0xaa071314),
-                    Color(0xdd031112),
+                    Color(0x99031112),
                   ],
                 ),
               ),
             ),
-            const CustomPaint(painter: VictoriaBackdropPainter()),
             DefaultTextStyle(
               style: const TextStyle(
                 color: VicColors.parchment,

@@ -5,6 +5,7 @@ import '../../services/launcher_config.dart';
 import '../victoria_ui.dart';
 import 'dlc_settings_tab.dart';
 import 'general_settings_tab.dart';
+import 'logs_settings_tab.dart';
 import 'mods_settings_tab.dart';
 import 'repair_settings_tab.dart';
 
@@ -22,6 +23,7 @@ class SettingsTabBody extends StatelessWidget {
     required this.dlcs,
     required this.disabledDlcs,
     required this.playsets,
+    required this.logs,
     required this.onPickGameRoot,
     required this.onPickUserData,
     required this.onAutoDetect,
@@ -62,6 +64,7 @@ class SettingsTabBody extends StatelessWidget {
   final List<DlcInfo> dlcs;
   final Set<String> disabledDlcs;
   final List<SavedPlayset> playsets;
+  final List<String> logs;
   final VoidCallback onPickGameRoot;
   final VoidCallback onPickUserData;
   final VoidCallback onAutoDetect;
@@ -106,7 +109,6 @@ class SettingsTabBody extends StatelessWidget {
             onPickGameRoot: onPickGameRoot,
             onPickUserData: onPickUserData,
             onAutoDetect: onAutoDetect,
-            onRefresh: onRefresh,
             onAddExtraRoot: onAddExtraRoot,
             onRemoveExtraRoot: onRemoveExtraRoot,
             onAutoRepairChanged: onAutoRepairChanged,
@@ -148,6 +150,7 @@ class SettingsTabBody extends StatelessWidget {
             onRefresh: onRefresh,
             onAutoDetect: onAutoDetect,
           ),
+          LogsSettingsTab(logs: logs),
         ],
       ),
     );

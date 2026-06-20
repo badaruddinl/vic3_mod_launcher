@@ -11,9 +11,9 @@ class HomeDashboard extends StatelessWidget {
     required this.mods,
     required this.activeModIds,
     required this.validations,
-    required this.logs,
     required this.onLaunch,
     required this.onOpenSettings,
+    required this.onOpenMods,
     required this.updateMenu,
   });
 
@@ -21,9 +21,9 @@ class HomeDashboard extends StatelessWidget {
   final Map<String, ModInfo> mods;
   final List<String> activeModIds;
   final Map<String, ModValidation> validations;
-  final List<String> logs;
   final VoidCallback onLaunch;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenMods;
   final Widget updateMenu;
 
   @override
@@ -40,7 +40,7 @@ class HomeDashboard extends StatelessWidget {
 
     return VictoriaShell(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
         child: Column(
           children: [
             VictoriaTitleBar(
@@ -59,11 +59,9 @@ class HomeDashboard extends StatelessWidget {
               ),
             ),
             VictoriaHeaderMark(gameVersion: gameVersion, compact: true),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             Expanded(
               child: DashboardHeroStage(
-                activeMods: activeMods,
-                validations: validations,
                 readyText: hasErrors ? 'Needs attention' : 'Playset ready',
                 readyDetail: hasErrors
                     ? 'Some mods need validation before launch.'
@@ -72,10 +70,18 @@ class HomeDashboard extends StatelessWidget {
                 onLaunch: onLaunch,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 18),
             const ReadinessTimeline(),
-            const SizedBox(height: 12),
-            SizedBox(height: 168, child: LiveLogPanel(logs: logs)),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 122,
+              child: ActiveModsPreview(
+                activeMods: activeMods,
+                validations: validations,
+                compact: true,
+                onShowAll: onOpenMods,
+              ),
+            ),
           ],
         ),
       ),

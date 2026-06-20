@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../models.dart';
+import '../common/ellipsis_tooltip_text.dart';
+import '../mod_display_name.dart';
 import '../victoria_ui.dart';
 import 'mod_compatibility_badge.dart';
 
@@ -39,18 +41,45 @@ class ModListTile extends StatelessWidget {
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Row(
-                children: [
-                  leading ?? ModSourceIcon(source: mod.source),
-                  const SizedBox(width: 10),
-                  Expanded(child: ModListTileText(mod: mod)),
-                  const SizedBox(width: 8),
-                  ModCompatibilityBadge(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final narrow = constraints.maxWidth < 190;
+                  final badge = ModCompatibilityBadge(
                     compatible: mod.compatible,
                     supportedVersion: mod.supportedVersion,
                     validation: validation,
-                  ),
-                ],
+                  );
+
+                  if (narrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            leading ?? ModSourceIcon(source: mod.source),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ModListTileText(mod: mod, narrow: true),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Align(alignment: Alignment.centerRight, child: badge),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      leading ?? ModSourceIcon(source: mod.source),
+                      const SizedBox(width: 10),
+                      Expanded(child: ModListTileText(mod: mod)),
+                      const SizedBox(width: 8),
+                      badge,
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -76,30 +105,31 @@ class ModSourceIcon extends StatelessWidget {
 }
 
 class ModListTileText extends StatelessWidget {
-  const ModListTileText({super.key, required this.mod});
+  const ModListTileText({super.key, required this.mod, this.narrow = false});
 
   final ModInfo mod;
+  final bool narrow;
 
   @override
   Widget build(BuildContext context) {
+    final displayName = formatModDisplayName(mod.name);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          mod.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        EllipsisTooltipText(
+          displayName,
+          tooltip: mod.name,
+          maxLines: narrow ? 2 : 1,
           style: const TextStyle(
             color: VicColors.parchment,
             fontWeight: FontWeight.w600,
+            height: 1.08,
           ),
         ),
         const SizedBox(height: 2),
-        Text(
+        EllipsisTooltipText(
           '${mod.source} | supported ${mod.supportedVersion.isEmpty ? 'unknown' : mod.supportedVersion} | mod ${mod.version.isEmpty ? 'unknown' : mod.version}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: VicColors.muted, fontSize: 12),
         ),
       ],

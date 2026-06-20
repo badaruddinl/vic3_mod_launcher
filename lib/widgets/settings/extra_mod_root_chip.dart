@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 
 class ExtraModRootChip extends StatelessWidget {
@@ -27,10 +28,8 @@ class ExtraModRootChip extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
+                child: EllipsisTooltipText(
                   root,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: VicColors.parchment,
                     fontSize: 12.5,

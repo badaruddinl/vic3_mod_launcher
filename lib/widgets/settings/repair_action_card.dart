@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 import 'settings_toolbar_button.dart';
 
@@ -74,10 +75,8 @@ class RepairActionText extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        EllipsisTooltipText(
           title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: VicColors.parchment,
             fontFamily: 'Georgia',
@@ -85,10 +84,9 @@ class RepairActionText extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 5),
-        Text(
+        EllipsisTooltipText(
           body,
           maxLines: 2,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: VicColors.muted, fontSize: 12),
         ),
       ],

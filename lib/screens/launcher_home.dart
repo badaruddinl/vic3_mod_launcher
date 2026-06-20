@@ -48,6 +48,7 @@ class _LauncherHomeState extends State<LauncherHome> {
   bool checkingUpdates = false;
   bool startupUpdateCheckDone = false;
   bool settingsOpen = false;
+  int settingsInitialTabIndex = 0;
   UpdateCheckResult? availableUpdate;
 
   @override
@@ -542,6 +543,13 @@ class _LauncherHomeState extends State<LauncherHome> {
     showLauncherMessageDialog(context, title: title, body: body);
   }
 
+  void _openSettings({int initialTabIndex = 0}) {
+    setState(() {
+      settingsInitialTabIndex = initialTabIndex;
+      settingsOpen = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -565,7 +573,9 @@ class _LauncherHomeState extends State<LauncherHome> {
         dlcs: dlcs,
         disabledDlcs: disabledDlcs,
         playsets: savedPlaysets,
+        logs: logs,
         updateMenu: updateMenu,
+        initialTabIndex: settingsInitialTabIndex,
         onBack: () => setState(() => settingsOpen = false),
         onPickUserData: _pickUserData,
         onPickGameRoot: _pickGameRoot,
@@ -624,10 +634,10 @@ class _LauncherHomeState extends State<LauncherHome> {
       mods: mods,
       activeModIds: activeModIds,
       validations: modValidations,
-      logs: logs,
       updateMenu: updateMenu,
       onLaunch: _launchGame,
-      onOpenSettings: () => setState(() => settingsOpen = true),
+      onOpenSettings: () => _openSettings(),
+      onOpenMods: () => _openSettings(initialTabIndex: 1),
     );
   }
 

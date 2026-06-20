@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../common/ellipsis_tooltip_text.dart';
 import '../victoria_ui.dart';
 
 class SettingLineText extends StatelessWidget {
@@ -15,12 +16,11 @@ class SettingLineText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        EllipsisTooltipText(
           title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: VicColors.parchment,
             fontSize: 14,
@@ -28,10 +28,8 @@ class SettingLineText extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 3),
-        Text(
+        EllipsisTooltipText(
           subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: VicColors.muted,
             fontSize: 11.5,
