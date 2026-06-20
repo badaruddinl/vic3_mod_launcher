@@ -1,7 +1,9 @@
 export 'dlc_settings_tab.dart';
+export 'dlc_tile.dart';
 export 'extra_mod_root_chip.dart';
 export 'mods_settings_tab.dart';
 export 'mods_toolbar.dart';
+export 'repair_action_card.dart';
 export 'repair_settings_tab.dart';
 export 'saved_playset_card.dart';
 export 'saved_playsets_strip.dart';

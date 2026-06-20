@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../victoria_ui.dart';
+import 'repair_action_card.dart';
 
 class RepairSettingsTab extends StatelessWidget {
   const RepairSettingsTab({
@@ -59,59 +59,6 @@ class RepairSettingsTab extends StatelessWidget {
             body: 'Re-scan all local content.',
             onPressed: onRefresh,
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class RepairActionCard extends StatelessWidget {
-  const RepairActionCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return GildedPanel(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Icon(icon, color: VicColors.gold, size: 32),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: VicColors.parchment,
-                    fontSize: 17,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  body,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: VicColors.muted, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          FilledButton(onPressed: onPressed, child: const Text('Run')),
         ],
       ),
     );

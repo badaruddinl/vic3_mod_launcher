@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../models.dart';
 import '../victoria_ui.dart';
+import 'dlc_tile.dart';
+import 'settings_toolbar_button.dart';
 
 class DlcSettingsTab extends StatelessWidget {
   const DlcSettingsTab({
@@ -23,31 +25,25 @@ class DlcSettingsTab extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       child: GildedPanel(
         title: 'DLC',
-        trailing: TextButton(
+        trailing: SettingsToolbarButton(
+          label: 'Enable all',
+          icon: Icons.done_all,
           onPressed: onEnableAllDlc,
-          child: const Text('Enable all'),
         ),
-        child: ListView.builder(
-          itemCount: dlcs.length,
-          itemBuilder: (context, index) {
-            final dlc = dlcs[index];
-            final enabled = !disabledDlcs.contains(dlc.ref.toLowerCase());
-            return CheckboxListTile(
-              value: enabled,
-              onChanged: (_) => onToggleDlc(dlc),
-              title: Text(
-                dlc.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+        child: dlcs.isEmpty
+            ? const DlcEmptyState()
+            : ListView.builder(
+                itemCount: dlcs.length,
+                itemBuilder: (context, index) {
+                  final dlc = dlcs[index];
+                  final enabled = !disabledDlcs.contains(dlc.ref.toLowerCase());
+                  return DlcTile(
+                    dlc: dlc,
+                    enabled: enabled,
+                    onToggle: onToggleDlc,
+                  );
+                },
               ),
-              subtitle: Text(
-                dlc.ref,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            );
-          },
-        ),
       ),
     );
   }
