@@ -40,7 +40,7 @@ class HomeDashboard extends StatelessWidget {
 
     return VictoriaShell(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 10, 22, 20),
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
         child: Column(
           children: [
             VictoriaTitleBar(
@@ -58,8 +58,8 @@ class HomeDashboard extends StatelessWidget {
                 ],
               ),
             ),
-            VictoriaHeaderMark(gameVersion: gameVersion),
-            const SizedBox(height: 14),
+            VictoriaHeaderMark(gameVersion: gameVersion, compact: true),
+            const SizedBox(height: 10),
             Expanded(
               child: DashboardHeroStage(
                 activeMods: activeMods,
@@ -72,10 +72,10 @@ class HomeDashboard extends StatelessWidget {
                 onLaunch: onLaunch,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             const ReadinessTimeline(),
-            const SizedBox(height: 14),
-            SizedBox(height: 196, child: LiveLogPanel(logs: logs)),
+            const SizedBox(height: 12),
+            SizedBox(height: 168, child: LiveLogPanel(logs: logs)),
           ],
         ),
       ),

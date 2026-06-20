@@ -24,28 +24,26 @@ class DashboardHeroStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
+    return Column(
       children: [
-        Positioned(
-          left: 0,
-          top: 18,
-          bottom: 22,
-          child: SizedBox(
-            width: 250,
-            child: ActiveModsPreview(
-              activeMods: activeMods,
-              validations: validations,
-            ),
+        SizedBox(
+          height: 142,
+          child: ActiveModsPreview(
+            activeMods: activeMods,
+            validations: validations,
+            compact: true,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(left: 142),
-          child: LaunchCenter(
-            readyText: readyText,
-            readyDetail: readyDetail,
-            hasErrors: hasErrors,
-            onLaunch: onLaunch,
+        const SizedBox(height: 10),
+        Expanded(
+          child: Center(
+            child: LaunchCenter(
+              readyText: readyText,
+              readyDetail: readyDetail,
+              hasErrors: hasErrors,
+              emblemSize: 158,
+              onLaunch: onLaunch,
+            ),
           ),
         ),
       ],

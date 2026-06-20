@@ -9,7 +9,7 @@ Future<void> main() async {
   debugPaintBaselinesEnabled = false;
   debugPaintSizeEnabled = false;
   await windowManager.ensureInitialized();
-  const portraitWindowSize = Size(790, 1010);
+  const portraitWindowSize = Size(525, 925);
   const windowOptions = WindowOptions(
     size: portraitWindowSize,
     minimumSize: portraitWindowSize,

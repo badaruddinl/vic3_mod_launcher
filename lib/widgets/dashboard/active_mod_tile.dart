@@ -4,10 +4,16 @@ import '../../models.dart';
 import '../victoria_ui.dart';
 
 class ActiveModTile extends StatelessWidget {
-  const ActiveModTile({super.key, required this.mod, required this.validation});
+  const ActiveModTile({
+    super.key,
+    required this.mod,
+    required this.validation,
+    this.compact = false,
+  });
 
   final ModInfo mod;
   final ModValidation? validation;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -16,17 +22,17 @@ class ActiveModTile extends StatelessWidget {
         mod.compatible == VersionStatus.ok;
     return Row(
       children: [
-        ModThumbnail(source: mod.source),
-        const SizedBox(width: 12),
+        ModThumbnail(source: mod.source, size: compact ? 46 : 62),
+        SizedBox(width: compact ? 10 : 12),
         Expanded(
           child: Text(
             mod.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: VicColors.parchment,
               fontFamily: 'Georgia',
-              fontSize: 16,
+              fontSize: compact ? 14 : 16,
               height: 1.15,
             ),
           ),
@@ -39,9 +45,10 @@ class ActiveModTile extends StatelessWidget {
 }
 
 class ModThumbnail extends StatelessWidget {
-  const ModThumbnail({super.key, required this.source});
+  const ModThumbnail({super.key, required this.source, this.size = 62});
 
   final String source;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +60,12 @@ class ModThumbnail extends StatelessWidget {
         boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8)],
       ),
       child: SizedBox(
-        width: 62,
-        height: 62,
+        width: size,
+        height: size,
         child: Icon(
           source == 'external' ? Icons.public_outlined : Icons.factory_outlined,
           color: VicColors.gold,
-          size: 30,
+          size: size * 0.48,
         ),
       ),
     );

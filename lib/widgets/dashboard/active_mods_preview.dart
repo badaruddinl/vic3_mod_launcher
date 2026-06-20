@@ -9,18 +9,20 @@ class ActiveModsPreview extends StatelessWidget {
     super.key,
     required this.activeMods,
     required this.validations,
+    this.compact = false,
   });
 
   final List<ModInfo> activeMods;
   final Map<String, ModValidation> validations;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final preview = activeMods.take(3).toList();
+    final preview = activeMods.take(compact ? 1 : 3).toList();
     final extra = activeMods.length - preview.length;
     return GildedPanel(
       title: 'Mods in use (${activeMods.length})',
-      padding: const EdgeInsets.fromLTRB(15, 14, 15, 14),
+      padding: EdgeInsets.fromLTRB(15, compact ? 12 : 14, 15, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -35,10 +37,14 @@ class ActiveModsPreview extends StatelessWidget {
             )
           else
             for (final mod in preview) ...[
-              ActiveModTile(mod: mod, validation: validations[mod.id]),
-              const SizedBox(height: 12),
+              ActiveModTile(
+                mod: mod,
+                validation: validations[mod.id],
+                compact: compact,
+              ),
+              if (!compact) const SizedBox(height: 12),
             ],
-          if (extra > 0) ...[
+          if (extra > 0 && !compact) ...[
             const Divider(color: Color(0x5578522e)),
             Center(
               child: Text(
@@ -52,7 +58,7 @@ class ActiveModsPreview extends StatelessWidget {
             ),
           ],
           const Spacer(),
-          const Divider(color: Color(0x5578522e)),
+          if (!compact) const Divider(color: Color(0x5578522e)),
           Row(
             children: [
               const Icon(Icons.inventory_2_outlined, color: VicColors.gold),
