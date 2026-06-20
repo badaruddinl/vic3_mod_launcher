@@ -180,16 +180,16 @@ try {
     Invoke-WindowClick -Handle $handle -X 50 -Y 48 -DelayMs 900
     $captures.Add((Save-WindowScreenshot -Handle $handle -Path (Join-Path $OutputPath "02-settings-general.png")))
 
-    Invoke-WindowClick -Handle $handle -X 174 -Y 225
+    Invoke-WindowClick -Handle $handle -X 174 -Y 150
     $captures.Add((Save-WindowScreenshot -Handle $handle -Path (Join-Path $OutputPath "03-settings-mods.png")))
 
-    Invoke-WindowClick -Handle $handle -X 263 -Y 225
+    Invoke-WindowClick -Handle $handle -X 263 -Y 150
     $captures.Add((Save-WindowScreenshot -Handle $handle -Path (Join-Path $OutputPath "04-settings-dlc.png")))
 
-    Invoke-WindowClick -Handle $handle -X 351 -Y 225
+    Invoke-WindowClick -Handle $handle -X 351 -Y 150
     $captures.Add((Save-WindowScreenshot -Handle $handle -Path (Join-Path $OutputPath "05-settings-repair.png")))
 
-    Invoke-WindowClick -Handle $handle -X 439 -Y 225
+    Invoke-WindowClick -Handle $handle -X 439 -Y 150
     $captures.Add((Save-WindowScreenshot -Handle $handle -Path (Join-Path $OutputPath "06-settings-logs.png")))
 
     $captures | Format-Table -AutoSize

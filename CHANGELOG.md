@@ -7,6 +7,23 @@ Format versi mengikuti SemVer: `MAJOR.MINOR.PATCH+BUILD`.
 - `PATCH`: bug fix atau perbaikan kecil.
 - `BUILD`: nomor build installer/app untuk update detection.
 
+## 1.2.0+11 - 2026-06-20
+
+### Added
+
+- Added portrait UI audit capture script for Home, General, Mods, DLC, Repair, and Logs tabs.
+- Added a dedicated Logs tab in Settings.
+- Added global tooltip behavior for ellipsized UI text.
+- Added cleaned mod display names for workshop/version-prefixed mod folders.
+
+### Changed
+
+- Refined the portrait launcher UI with a roomier Home screen and bottom `Mods in use` panel.
+- Moved live logs out of Home into the new Logs tab.
+- Simplified the Settings header to reduce wasted vertical space.
+- Improved General tab balance and made Auto Detect an explicit action panel.
+- Made the Victoria backdrop image more visible behind the UI.
+
 ## 1.1.4+10 - 2026-06-19
 
 ### Fixed
