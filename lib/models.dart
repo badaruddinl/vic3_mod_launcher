@@ -11,6 +11,7 @@ class ModInfo {
     required this.version,
     required this.remoteFileId,
     required this.compatible,
+    required this.iconPath,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class ModInfo {
   final String version;
   final String remoteFileId;
   final VersionStatus compatible;
+  final String iconPath;
 
   String get modRef => 'mod/${p.basename(modFile)}';
 }

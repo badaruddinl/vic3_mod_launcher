@@ -15,9 +15,10 @@ class Vic3LauncherApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xff2d6a63),
-          brightness: Brightness.light,
+          brightness: Brightness.dark,
         ),
         listTileTheme: const ListTileThemeData(dense: true),
+        scaffoldBackgroundColor: const Color(0xff071314),
       ),
       home: const LauncherHome(),
     );
