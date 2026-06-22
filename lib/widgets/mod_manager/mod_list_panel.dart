@@ -4,7 +4,6 @@ import '../../models.dart';
 import 'mod_list_empty_state.dart';
 import 'mod_list_frame.dart';
 import 'mod_list_tile.dart';
-import 'mod_order_handle.dart';
 
 class ModListPanel extends StatelessWidget {
   const ModListPanel({
@@ -88,7 +87,7 @@ class ActiveModListPanel extends StatelessWidget {
                   validation: validations[id],
                   selected: selected.contains(id),
                   onTap: () => onTap(id),
-                  leading: ReorderableDragStartListener(
+                  belowIcon: ReorderableDragStartListener(
                     index: index,
                     child: ModOrderHandle(index: index),
                   ),

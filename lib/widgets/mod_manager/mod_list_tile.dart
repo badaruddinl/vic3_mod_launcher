@@ -15,14 +15,16 @@ class ModListTile extends StatelessWidget {
     required this.validation,
     required this.selected,
     required this.onTap,
-    this.leading,
+    this.prefix,
+    this.belowIcon,
   });
 
   final ModInfo mod;
   final ModValidation? validation;
   final bool selected;
   final VoidCallback onTap;
-  final Widget? leading;
+  final Widget? prefix;
+  final Widget? belowIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +61,15 @@ class ModListTile extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            leading ??
-                                ModSourceIcon(
-                                  source: mod.source,
-                                  iconPath: mod.iconPath,
-                                ),
+                            if (prefix != null) ...[
+                              prefix!,
+                              const SizedBox(width: 8),
+                            ],
+                            ModSourceIcon(
+                              source: mod.source,
+                              iconPath: mod.iconPath,
+                              below: belowIcon,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: ModListTileText(mod: mod, narrow: true),
@@ -78,11 +84,15 @@ class ModListTile extends StatelessWidget {
 
                   return Row(
                     children: [
-                      leading ??
-                          ModSourceIcon(
-                            source: mod.source,
-                            iconPath: mod.iconPath,
-                          ),
+                      if (prefix != null) ...[
+                        prefix!,
+                        const SizedBox(width: 8),
+                      ],
+                      ModSourceIcon(
+                        source: mod.source,
+                        iconPath: mod.iconPath,
+                        below: belowIcon,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(child: ModListTileText(mod: mod)),
                       const SizedBox(width: 8),
@@ -104,14 +114,16 @@ class ModSourceIcon extends StatelessWidget {
     super.key,
     required this.source,
     required this.iconPath,
+    this.below,
   });
 
   final String source;
   final String iconPath;
+  final Widget? below;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.square(
+    final icon = SizedBox.square(
       dimension: 24,
       child: iconPath.isEmpty
           ? Icon(
@@ -131,6 +143,46 @@ class ModSourceIcon extends StatelessWidget {
                 ),
               ),
             ),
+    );
+    if (below == null) return icon;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [icon, const SizedBox(height: 4), below!],
+    );
+  }
+}
+
+class ModOrderHandle extends StatelessWidget {
+  const ModOrderHandle({super.key, required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xaa071314),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: VicColors.goldDark),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${index + 1}',
+              style: const TextStyle(
+                color: VicColors.gold,
+                fontWeight: FontWeight.w700,
+                fontSize: 9,
+                height: 1,
+              ),
+            ),
+            const Icon(Icons.drag_indicator, size: 9, color: VicColors.gold),
+          ],
+        ),
+      ),
     );
   }
 }
