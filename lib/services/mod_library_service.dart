@@ -63,6 +63,11 @@ class ModLibraryService {
     final name = (data['name'] ?? p.basenameWithoutExtension(modFile.path))
         .trim();
     final supported = data['supported_version'] ?? '';
+    final iconPath = _resolveIconPath(
+      descriptorData: data,
+      contentPath: contentPath,
+      modFilePath: modFile.path,
+    );
     final source = PathService.isUnder(contentPath, config.modPath)
         ? 'local'
         : 'external';
@@ -77,7 +82,59 @@ class ModLibraryService {
       version: data['version'] ?? '',
       remoteFileId: data['remote_file_id'] ?? '',
       compatible: PathService.versionCompatible(gameVersion, supported),
+      iconPath: iconPath,
     );
+  }
+
+  String _resolveIconPath({
+    required Map<String, String> descriptorData,
+    required String contentPath,
+    required String modFilePath,
+  }) {
+    final candidates = <String>[];
+    void addCandidate(String value, {String? basePath}) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return;
+      if (p.isAbsolute(trimmed)) {
+        candidates.add(trimmed);
+      } else if (basePath != null && basePath.isNotEmpty) {
+        candidates.add(p.join(basePath, trimmed));
+      }
+    }
+
+    addCandidate(descriptorData['picture'] ?? '', basePath: contentPath);
+    addCandidate(
+      descriptorData['picture'] ?? '',
+      basePath: p.dirname(modFilePath),
+    );
+
+    final descriptor = File(p.join(contentPath, 'descriptor.mod'));
+    if (descriptor.existsSync()) {
+      final contentDescriptor = DescriptorService.parseDescriptorFile(
+        descriptor.path,
+      );
+      addCandidate(contentDescriptor['picture'] ?? '', basePath: contentPath);
+    }
+
+    for (final name in const [
+      'thumbnail.png',
+      'thumbnail.jpg',
+      'thumbnail.jpeg',
+      'preview.png',
+      'preview.jpg',
+      'preview.jpeg',
+      'icon.png',
+      'icon.jpg',
+      'icon.jpeg',
+    ]) {
+      addCandidate(name, basePath: contentPath);
+    }
+
+    for (final candidate in candidates) {
+      final file = File(candidate);
+      if (file.existsSync()) return file.path;
+    }
+    return '';
   }
 
   String ensureModFileForFolder(

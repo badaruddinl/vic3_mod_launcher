@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../models.dart';
@@ -25,7 +27,11 @@ class ActiveModTile extends StatelessWidget {
     final displayName = formatModDisplayName(mod.name);
     return Row(
       children: [
-        ModThumbnail(source: mod.source, size: compact ? 38 : 62),
+        ModThumbnail(
+          source: mod.source,
+          iconPath: mod.iconPath,
+          size: compact ? 38 : 62,
+        ),
         SizedBox(width: compact ? 10 : 12),
         Expanded(
           child: EllipsisTooltipText(
@@ -48,9 +54,15 @@ class ActiveModTile extends StatelessWidget {
 }
 
 class ModThumbnail extends StatelessWidget {
-  const ModThumbnail({super.key, required this.source, this.size = 62});
+  const ModThumbnail({
+    super.key,
+    required this.source,
+    required this.iconPath,
+    this.size = 62,
+  });
 
   final String source;
+  final String iconPath;
   final double size;
 
   @override
@@ -65,12 +77,56 @@ class ModThumbnail extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: Icon(
-          source == 'external' ? Icons.public_outlined : Icons.factory_outlined,
-          color: VicColors.gold,
-          size: size * 0.48,
+        child: _ModThumbnailContent(
+          source: source,
+          iconPath: iconPath,
+          size: size,
         ),
       ),
+    );
+  }
+}
+
+class _ModThumbnailContent extends StatelessWidget {
+  const _ModThumbnailContent({
+    required this.source,
+    required this.iconPath,
+    required this.size,
+  });
+
+  final String source;
+  final String iconPath;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (iconPath.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(7),
+        child: Image.file(
+          File(iconPath),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) =>
+              _FallbackModIcon(source: source, size: size),
+        ),
+      );
+    }
+    return _FallbackModIcon(source: source, size: size);
+  }
+}
+
+class _FallbackModIcon extends StatelessWidget {
+  const _FallbackModIcon({required this.source, required this.size});
+
+  final String source;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(
+      source == 'external' ? Icons.public_outlined : Icons.factory_outlined,
+      color: VicColors.gold,
+      size: size * 0.48,
     );
   }
 }

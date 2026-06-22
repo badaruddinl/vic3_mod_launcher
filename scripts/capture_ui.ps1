@@ -177,7 +177,7 @@ try {
     $captures = New-Object System.Collections.Generic.List[object]
     $captures.Add((Save-WindowScreenshot -Handle $handle -Path (Join-Path $OutputPath "01-home.png")))
 
-    Invoke-WindowClick -Handle $handle -X 50 -Y 48 -DelayMs 900
+    Invoke-WindowClick -Handle $handle -X 58 -Y 50 -DelayMs 1200
     $captures.Add((Save-WindowScreenshot -Handle $handle -Path (Join-Path $OutputPath "02-settings-general.png")))
 
     Invoke-WindowClick -Handle $handle -X 174 -Y 150

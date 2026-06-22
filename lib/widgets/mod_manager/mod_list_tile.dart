@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../models.dart';
@@ -57,7 +59,11 @@ class ModListTile extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            leading ?? ModSourceIcon(source: mod.source),
+                            leading ??
+                                ModSourceIcon(
+                                  source: mod.source,
+                                  iconPath: mod.iconPath,
+                                ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: ModListTileText(mod: mod, narrow: true),
@@ -72,7 +78,11 @@ class ModListTile extends StatelessWidget {
 
                   return Row(
                     children: [
-                      leading ?? ModSourceIcon(source: mod.source),
+                      leading ??
+                          ModSourceIcon(
+                            source: mod.source,
+                            iconPath: mod.iconPath,
+                          ),
                       const SizedBox(width: 10),
                       Expanded(child: ModListTileText(mod: mod)),
                       const SizedBox(width: 8),
@@ -90,16 +100,37 @@ class ModListTile extends StatelessWidget {
 }
 
 class ModSourceIcon extends StatelessWidget {
-  const ModSourceIcon({super.key, required this.source});
+  const ModSourceIcon({
+    super.key,
+    required this.source,
+    required this.iconPath,
+  });
 
   final String source;
+  final String iconPath;
 
   @override
   Widget build(BuildContext context) {
-    return Icon(
-      source == 'external' ? Icons.link : Icons.folder_outlined,
-      color: VicColors.gold,
-      size: 22,
+    return SizedBox.square(
+      dimension: 24,
+      child: iconPath.isEmpty
+          ? Icon(
+              source == 'external' ? Icons.link : Icons.folder_outlined,
+              color: VicColors.gold,
+              size: 22,
+            )
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.file(
+                File(iconPath),
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Icon(
+                  source == 'external' ? Icons.link : Icons.folder_outlined,
+                  color: VicColors.gold,
+                  size: 22,
+                ),
+              ),
+            ),
     );
   }
 }
