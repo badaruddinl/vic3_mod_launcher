@@ -7,6 +7,13 @@ Format versi mengikuti SemVer: `MAJOR.MINOR.PATCH+BUILD`.
 - `PATCH`: bug fix atau perbaikan kecil.
 - `BUILD`: nomor build installer/app untuk update detection.
 
+## 1.2.1+12 - 2026-06-22
+
+### Changed
+
+- Display mod thumbnails in Home, available mods, and active mod order lists when a mod provides an icon or preview image.
+- Move the active mod reorder handle below the mod thumbnail so the mod title has more usable space.
+
 ## 1.2.0+11 - 2026-06-20
 
 ### Added
